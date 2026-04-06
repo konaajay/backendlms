@@ -1,0 +1,33 @@
+package com.lms.www.management.controller;
+
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.lms.www.management.service.EmailNotificationService;
+
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequestMapping("/api/attendance/alert")
+@RequiredArgsConstructor
+public class AttendanceAlertController {
+
+    private final EmailNotificationService emailNotificationService;
+
+    @PostMapping("/send")
+    @PreAuthorize("hasAuthority('ATTENDANCE_ALERT_SEND')")
+    public void sendManualAlert(
+            @RequestParam Long studentId,
+            @RequestParam String flagType,
+            @RequestParam int attendancePercent
+    ) {
+        emailNotificationService.sendAttendanceAlert(
+                studentId,
+                flagType,
+                attendancePercent
+        );
+    }
+}

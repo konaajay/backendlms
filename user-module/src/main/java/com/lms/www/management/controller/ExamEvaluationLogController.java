@@ -1,0 +1,118 @@
+package com.lms.www.management.controller;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.lms.www.management.model.ExamEvaluationLog;
+import com.lms.www.management.service.ExamEvaluationLogService;
+
+@RestController
+@RequestMapping("/api/exam-attempts/{attemptId}/evaluation-logs")
+public class ExamEvaluationLogController {
+
+    private final ExamEvaluationLogService examEvaluationLogService;
+
+    public ExamEvaluationLogController(
+            ExamEvaluationLogService examEvaluationLogService) {
+        this.examEvaluationLogService = examEvaluationLogService;
+    }
+
+    // ================= CREATE EVALUATION LOG =================
+    @PostMapping
+    @PreAuthorize("hasAnyAuthority('EXAM_EVALUATION_LOG_CREATE', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    public ResponseEntity<ExamEvaluationLog> createLog(
+            @PathVariable Long attemptId,
+            @RequestBody Map<String, Object> request,
+            Authentication authentication) {
+
+        Long evaluatorId = extractEvaluatorId(authentication);
+
+        return ResponseEntity.ok(
+                examEvaluationLogService.logEvaluationChange(
+                        attemptId,
+                        evaluatorId,
+                        Double.valueOf(request.get("oldScore").toString()),
+                        Double.valueOf(request.get("newScore").toString()),
+                        request.get("reason").toString()
+                )
+        );
+    }
+
+    // ================= GET EVALUATION LOGS =================
+    @GetMapping
+    @PreAuthorize("hasAnyAuthority('EXAM_EVALUATION_LOG_VIEW', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    public ResponseEntity<List<ExamEvaluationLog>> getLogs(
+            @PathVariable Long attemptId,
+            Authentication authentication) {
+
+        extractViewer(authentication);
+
+        return ResponseEntity.ok(
+                examEvaluationLogService.getLogsByAttempt(attemptId)
+        );
+    }
+    
+   
+    @PostMapping("/coding-evaluate/{responseId}")
+    @PreAuthorize("hasAnyAuthority('EXAM_RESPONSE_EVALUATE', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    public ResponseEntity<?> evaluateCodingResponse(
+            @PathVariable Long attemptId,
+            @PathVariable Long responseId,
+            @RequestBody Map<String, Object> body,
+            Authentication authentication) {
+
+        Long evaluatorId = extractEvaluatorId(authentication);
+
+        Double marks = Double.valueOf(body.get("marks").toString());
+        String reason = body.getOrDefault("reason", "Coding evaluation")
+                            .toString();
+
+        // 1️⃣ Get old score BEFORE evaluation
+        Double oldScore =
+                examEvaluationLogService.getCurrentScore(attemptId);
+
+        // 2️⃣ Update response marks (reuse existing logic)
+        examEvaluationLogService.evaluateCodingResponse(
+                attemptId,
+                responseId,
+                marks
+        );
+
+        // 3️⃣ Get new score AFTER evaluation
+        Double newScore =
+                examEvaluationLogService.getCurrentScore(attemptId);
+
+        // 4️⃣ Log evaluation change
+        examEvaluationLogService.logEvaluationChange(
+                attemptId,
+                evaluatorId,
+                oldScore,
+                newScore,
+                reason
+        );
+
+        return ResponseEntity.ok(
+                Map.of("status", "Coding evaluated successfully")
+        );
+    }
+
+    // ================= TEMP ID EXTRACTION =================
+    private Long extractEvaluatorId(Authentication authentication) {
+        // TEMP until JWT → evaluator mapping
+        return 99L; // admin / instructor placeholder
+    }
+
+    private void extractViewer(Authentication authentication) {
+        // TEMP – admin / instructor
+    }
+}

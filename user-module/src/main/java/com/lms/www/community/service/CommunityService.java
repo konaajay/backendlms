@@ -1,0 +1,96 @@
+package com.lms.www.community.service;
+
+import com.lms.www.community.model.*;
+
+import java.util.List;
+
+public interface CommunityService {
+
+//////////////////////////////////////////////////////
+// COMMUNITY SPACES
+//////////////////////////////////////////////////////
+
+CommunitySpace createSpace(CommunitySpace space);
+
+List<CommunitySpace> getSpaces();
+
+CommunitySpace updateCommunityTitle(Long spaceId,String title);
+
+List<CommunitySpace> searchSpaces(String search);
+
+//////////////////////////////////////////////////////
+// CHANNELS
+//////////////////////////////////////////////////////
+
+List<CommunityChannel> getChannels(Long spaceId);
+
+CommunityChannel createChannel(Long spaceId,String name,String description,Boolean adminsOnly);
+
+CommunityChannel updateChannel(Long channelId,String name,String description,Boolean adminsOnly);
+
+//////////////////////////////////////////////////////
+// THREADS
+//////////////////////////////////////////////////////
+
+CommunityThread createThread(CommunityThread thread);
+
+List<CommunityThread> getThreads(Long channelId);
+
+CommunityThread getThread(Long threadId);
+
+//////////////////////////////////////////////////////
+// REPLIES
+//////////////////////////////////////////////////////
+
+CommunityReply reply(Long threadId,CommunityReply reply);
+
+//////////////////////////////////////////////////////
+// REACTIONS
+//////////////////////////////////////////////////////
+
+void react(Long threadId,Long replyId,String reactionType,Long userId);
+
+//////////////////////////////////////////////////////
+// BOOKMARKS
+//////////////////////////////////////////////////////
+
+void bookmark(Long threadId,Long userId);
+
+void mentionUser(Long threadId, Long replyId, Long mentionedUserId);
+
+List<CommunityMention> getMentions(Long userId);
+
+List<CommunityBookmark> getBookmarks(Long userId);
+
+//////////////////////////////////////////////////////
+// REPORTS
+//////////////////////////////////////////////////////
+
+CommunityReport report(CommunityReport report);
+
+//////////////////////////////////////////////////////
+// NOTIFICATIONS
+//////////////////////////////////////////////////////
+
+List<CommunityNotification> getNotifications(Long userId);
+
+void autoJoinMarketingChannel(Long userId);
+
+void autoJoinGlobalCommunity(Long userId);
+
+void autoJoinRoleCommunity(Long userId, String roleName);
+
+void createCourseCommunity(Long courseId, String courseName);
+
+void addStudentToCourseCommunity(Long courseId, Long userId);
+
+void addInstructorToCourseCommunity(Long courseId, Long userId);
+
+java.util.Map<String, Object> getMyCommunities(Long userId);
+
+java.util.Map<String, Object> getMarketingCommunity();
+
+void removeLeadFromMarketingChannel(Long userId);
+
+void addLeadToCommunity(Long id, Long courseId, Long batchId);
+}

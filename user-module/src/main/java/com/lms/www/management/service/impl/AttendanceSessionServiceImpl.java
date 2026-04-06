@@ -1,0 +1,298 @@
+package com.lms.www.management.service.impl;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.lms.www.common.exception.ResourceNotFoundException;
+import com.lms.www.management.model.AttendanceRecord;
+import com.lms.www.management.model.AttendanceSession;
+import com.lms.www.management.model.Session;
+import com.lms.www.management.repository.AttendanceRecordRepository;
+import com.lms.www.management.repository.AttendanceSessionRepository;
+import com.lms.www.management.repository.SessionRepository;
+import com.lms.www.management.repository.StudentBatchRepository;
+import com.lms.www.management.service.AttendanceSessionService;
+import com.lms.www.management.service.AttendanceSummaryService;
+import com.lms.www.management.service.EmailNotificationService;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class AttendanceSessionServiceImpl implements AttendanceSessionService {
+
+        private final AttendanceSessionRepository attendanceSessionRepository;
+        private final SessionRepository sessionRepository;
+
+        // 🔹 ADDED (dependency only)
+        private final AttendanceRecordRepository attendanceRecordRepository;
+        private final StudentBatchRepository studentBatchRepository;
+        private final AttendanceSummaryService attendanceSummaryService;
+        private final EmailNotificationService emailNotificationService;
+        private final com.lms.www.management.service.AttendanceRecordService attendanceRecordService;
+        private final com.lms.www.management.repository.AttendanceConfigRepository attendanceConfigRepository;
+
+        // ===============================
+        // START ATTENDANCE
+        // ===============================
+        @Override
+        public AttendanceSession startAttendance(
+                        Long sessionId,
+                        Long courseId,
+                        Long batchId,
+                        Long userId) {
+
+                Session session = sessionRepository.findById(sessionId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Session not found"));
+
+                if (!session.getBatchId().equals(batchId)) {
+                        throw new ResponseStatusException(
+                                        HttpStatus.BAD_REQUEST,
+                                        "Session does not belong to this batch");
+                }
+
+                attendanceSessionRepository
+                                .findBySessionIdAndStatus(sessionId, "ACTIVE")
+                                .ifPresent(a -> {
+                                        throw new ResponseStatusException(
+                                                        HttpStatus.CONFLICT,
+                                                        "Attendance already started for this session");
+                                });
+
+                AttendanceSession attendanceSession = new AttendanceSession();
+                attendanceSession.setSessionId(sessionId);
+                attendanceSession.setCourseId(courseId);
+                attendanceSession.setBatchId(batchId);
+                attendanceSession.setCreatedBy(userId);
+                attendanceSession.setStartedAt(LocalDateTime.now());
+                attendanceSession.setStatus("ACTIVE");
+
+                return attendanceSessionRepository.save(attendanceSession);
+        }
+
+        // ===============================
+        // END ATTENDANCE
+        // ===============================
+        @Override
+        public AttendanceSession endAttendance(Long attendanceSessionId) {
+
+                AttendanceSession attendanceSession = attendanceSessionRepository.findById(attendanceSessionId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Attendance session not found"));
+
+                attendanceSession.setStatus("ENDED");
+                attendanceSession.setEndedAt(LocalDateTime.now());
+
+                AttendanceSession saved = attendanceSessionRepository.save(attendanceSession);
+
+                // 🔹 ADDED (auto-mark absent students)
+                finalizeAbsentStudents(saved);
+
+                checkAndTriggerAtRiskAlerts(saved);
+
+                return saved;
+        }
+
+        // ===============================
+        // 🔹 AUTO ABSENT LOGIC (ADDED)
+        // ===============================
+        private void finalizeAbsentStudents(AttendanceSession session) {
+
+                Long batchId = session.getBatchId();
+                Long attendanceSessionId = session.getId();
+
+                // 1. All students in batch
+                List<Long> allStudents = studentBatchRepository.findStudentIdsByBatchId(batchId);
+
+                // 2. Students who already have attendance
+                List<Long> markedStudents = attendanceRecordRepository
+                                .findStudentIdsByAttendanceSessionId(
+                                                attendanceSessionId);
+
+                // 3. Mark remaining as ABSENT
+                for (Long studentId : allStudents) {
+
+                        if (!markedStudents.contains(studentId)) {
+
+                                AttendanceRecord record = new AttendanceRecord();
+                                record.setAttendanceSessionId(attendanceSessionId);
+                                record.setStudentId(studentId);
+                                record.setAttendanceDate(LocalDate.now());
+                                record.setStatus("ABSENT");
+                                record.setSource("SYSTEM");
+                                record.setRemarks("Did not join session");
+                                record.setMarkedAt(session.getEndedAt());
+                                record.setMarkedBy(session.getCreatedBy());
+
+                                attendanceRecordRepository.save(record);
+
+                                // 📧 CHECK CONSECUTIVE ABSENCE (Multiples of Limit)
+                                try {
+                                        boolean atRiskByAbsence = attendanceRecordService.isStudentAtRiskByAbsence(
+                                                        studentId,
+                                                        session.getCourseId(),
+                                                        batchId);
+
+                                        if (atRiskByAbsence) {
+                                                int consecutiveDays = getConsecutiveAbsenceCount(studentId);
+
+                                                try {
+                                                        com.lms.www.management.model.AttendanceConfig config = attendanceConfigRepository
+                                                                        .findByCourseIdAndBatchId(session.getCourseId(),
+                                                                                        session.getBatchId())
+                                                                        .orElse(null);
+
+                                                        if (config != null) {
+                                                                int limit = config.getConsecutiveAbsenceLimit();
+                                                                // Trigger at N, 2N, 3N...
+                                                                if (consecutiveDays > 0 && limit > 0
+                                                                                && (consecutiveDays % limit == 0)) {
+                                                                        emailNotificationService
+                                                                                        .sendConsecutiveAbsenceAlert(
+                                                                                                        studentId,
+                                                                                                        consecutiveDays);
+                                                                }
+                                                        }
+                                                } catch (Exception e) {
+                                                        System.err.println("Error triggering absence email: "
+                                                                        + e.getMessage());
+                                                }
+                                        }
+
+                                } catch (Exception e) {
+                                        System.err.println("Error in absence check: " + e.getMessage());
+                                }
+                        }
+                }
+        }
+
+        // Helper to get actual count
+        private int getConsecutiveAbsenceCount(Long studentId) {
+                try {
+                        List<AttendanceRecord> records = attendanceRecordRepository
+                                        .findByStudentIdOrderByAttendanceDateDesc(
+                                                        studentId,
+                                                        org.springframework.data.domain.PageRequest.of(0, 50));
+
+                        int count = 0;
+                        for (AttendanceRecord r : records) {
+                                if ("ABSENT".equalsIgnoreCase(r.getStatus())) {
+                                        count++;
+                                } else {
+                                        break;
+                                }
+                        }
+                        return count;
+                } catch (Exception e) {
+                        return 0;
+                }
+        }
+
+        // ===============================
+        // GET BY ID
+        // ===============================
+        @Override
+        @Transactional(readOnly = true)
+        public AttendanceSession getById(Long attendanceSessionId) {
+
+                return attendanceSessionRepository.findById(attendanceSessionId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Attendance session not found"));
+        }
+
+        // ===============================
+        // GET ACTIVE BY SESSION ID
+        // ===============================
+        @Override
+        @Transactional(readOnly = true)
+        public AttendanceSession getActiveBySessionId(Long sessionId) {
+
+                return attendanceSessionRepository
+                                .findBySessionIdAndStatus(sessionId, "ACTIVE")
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "No active attendance for this session"));
+        }
+
+        // ===============================
+        // GET ACTIVE + ENDED
+        // ===============================
+        @Override
+        @Transactional(readOnly = true)
+        public List<AttendanceSession> getActiveAndEndedBySessionId(Long sessionId) {
+
+                return attendanceSessionRepository.findAll().stream()
+                                .filter(a -> a.getSessionId().equals(sessionId) &&
+                                                (a.getStatus().equals("ACTIVE")
+                                                                || a.getStatus().equals("ENDED")))
+                                .toList();
+        }
+
+        // ===============================
+        // GET BY DATE
+        // ===============================
+        @Override
+        @Transactional(readOnly = true)
+        public List<AttendanceSession> getByDate(LocalDate date) {
+
+                LocalDateTime start = date.atStartOfDay();
+                LocalDateTime end = date.atTime(LocalTime.MAX);
+
+                return attendanceSessionRepository
+                                .findByStartedAtBetween(start, end);
+        }
+
+        // ===============================
+        // DELETE
+        // ===============================
+        @Override
+        public void delete(Long attendanceSessionId) {
+
+                AttendanceSession session = attendanceSessionRepository.findById(attendanceSessionId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Attendance session not found"));
+
+                attendanceSessionRepository.delete(session);
+        }
+
+        private void checkAndTriggerAtRiskAlerts(AttendanceSession session) {
+
+                Long courseId = session.getCourseId();
+                Long batchId = session.getBatchId();
+
+                // get all students of the batch
+                List<Long> studentIds = studentBatchRepository.findStudentIdsByBatchId(batchId);
+
+                for (Long studentId : studentIds) {
+
+                        Map<String, Object> summary = attendanceSummaryService.getStudentEligibilitySummary(
+                                        studentId,
+                                        courseId,
+                                        batchId);
+
+                        Boolean atRisk = (Boolean) summary.get("atRisk");
+
+                        if (Boolean.TRUE.equals(atRisk)) {
+
+                                System.out.println(
+                                                "AT-RISK student detected -> studentId=" + studentId);
+
+                                emailNotificationService.sendAttendanceAlert(
+                                                studentId,
+                                                "AT_RISK",
+                                                ((Number) summary.get("attendancePercentage")).intValue()
+                                                
+                                                );
+                        }
+                }
+        }
+
+}

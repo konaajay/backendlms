@@ -1,0 +1,16 @@
+package com.lms.www.community.repository;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.lms.www.community.model.CommunitySpace;
+
+public interface CommunitySpaceRepository extends JpaRepository<CommunitySpace,Long> {
+	List<CommunitySpace> findBySpaceNameContainingIgnoreCase(String name);
+	Optional<CommunitySpace> findBySpaceName(String spaceName);
+	Optional<CommunitySpace> findByCourseId(Long courseId);
+	
+	List<CommunitySpace> findBySpaceIdIn(List<Long> spaceIds);
+}

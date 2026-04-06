@@ -1,0 +1,18 @@
+package com.lms.www.repository;
+
+
+
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.lms.www.model.Parent;
+
+
+
+public interface ParentRepository extends JpaRepository<Parent, Long> {
+
+    void deleteByUser_UserId(Long userId);
+    Optional<Parent> findByUser_UserId(Long userId);
+
+}
