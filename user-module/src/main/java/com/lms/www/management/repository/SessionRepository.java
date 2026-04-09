@@ -13,6 +13,8 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
     // Get all sessions under a batch
     List<Session> findByBatchId(Long batchId);
 
+    List<Session> findByBatchIdIn(List<Long> batchIds);
+
     // Get sessions by batch and status (Running / Upcoming / Completed)
     List<Session> findByBatchIdAndStatus(Long batchId, String status);
     

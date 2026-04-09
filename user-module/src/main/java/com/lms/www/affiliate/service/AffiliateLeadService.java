@@ -21,7 +21,10 @@ public interface AffiliateLeadService {
 
     List<AffiliateLeadDTO> getLeadsSecure();
 
+    AffiliateLeadDTO updateLead(Long leadId, AffiliateLeadDTO request);
+
     String exportLeadsCsv();
+
     AffiliateLeadDTO getLeadByStudentId(Long studentId);
     AffiliateLeadDTO getLeadByEmailAndBatch(String email, Long batchId);
     AffiliateLeadDTO convertToStudent(Long leadId, jakarta.servlet.http.HttpServletRequest request);

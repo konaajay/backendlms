@@ -12,18 +12,19 @@ public class CodingTestCase {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "test_case_id")
     private Long testCaseId;
 
-    @Column(nullable = false)
+    @Column(name = "question_id", nullable = false)
     private Long questionId;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(name = "input_data", columnDefinition = "TEXT", nullable = false)
     private String inputData;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(name = "expected_output", columnDefinition = "TEXT", nullable = false)
     private String expectedOutput;
 
-    @Column(nullable = false)
+    @Column(name = "hidden", nullable = false)
     private Boolean hidden;
 
     // Manual Getters

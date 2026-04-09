@@ -39,7 +39,10 @@ public class FeeType {
     @Column(name = "display_order")
     private Integer displayOrder = 0;
 
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     public FeeType() {}

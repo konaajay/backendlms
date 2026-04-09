@@ -12,6 +12,11 @@ import com.lms.www.fee.allocation.repository.StudentFeeAllocationRepository;
 import com.lms.www.fee.ledger.service.AuditLogService;
 import com.lms.www.fee.service.PaymentGatewayService;
 import com.lms.www.fee.service.StudentInstallmentPlanService;
+import com.lms.www.fee.payment.entity.StudentFeePayment;
+import com.lms.www.fee.payment.entity.PaymentMode;
+import com.lms.www.fee.payment.entity.PaymentStatus;
+import com.lms.www.fee.payment.repository.StudentFeePaymentRepository;
+import com.lms.www.fee.service.EmailService;
 import com.lms.www.common.exception.ResourceNotFoundException;
 import com.lms.www.security.UserContext;
 
@@ -40,7 +45,11 @@ public class StudentInstallmentPlanServiceImpl implements StudentInstallmentPlan
     private final StudentFeeAllocationRepository allocationRepo;
     private final AuditLogService auditLogService;
     private final PaymentGatewayService paymentGatewayService;
+    private final StudentFeePaymentRepository paymentRepository;
     private final UserContext userContext;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private EmailService emailService;
 
     @Override
     public List<InstallmentPlanResponse> createInstallments(Long allocationId, List<InstallmentPlanRequest> requests) {
@@ -170,13 +179,56 @@ public class StudentInstallmentPlanServiceImpl implements StudentInstallmentPlan
         installment.setLinkCreatedAt(LocalDateTime.now());
         installment.setLinkExpiry(LocalDateTime.now().plusDays(1));
 
-        return repo.save(installment);
+        StudentInstallmentPlan saved = repo.save(installment);
+
+        // CREATE PENDING RECORD IN HISTORY
+        StudentFeePayment p = new StudentFeePayment();
+        p.setStudentFeeAllocationId(allocation.getId());
+        p.setStudentInstallmentPlanId(id);
+        p.setPaidAmount(amount);
+        p.setPaymentDate(LocalDateTime.now());
+        p.setPaymentMode(PaymentMode.ONLINE);
+        p.setPaymentStatus(PaymentStatus.PENDING);
+        p.setTransactionReference(orderId);
+        p.setCashfreeOrderId(orderId);
+        p.setPaymentSessionId(saved.getPaymentSessionId());
+        paymentRepository.save(p);
+
+        // Add Logs for tracking
+        System.out.println("--------------------------------------------------");
+        System.out.println("🔗 PAYMENT LINK GENERATED");
+        System.out.println("ID: " + id);
+        System.out.println("Order ID: " + orderId);
+        System.out.println("Amount: ₹" + amount);
+        System.out.println("Customer: " + allocation.getStudentName() + " (" + allocation.getStudentEmail() + ")");
+        System.out.println("Session ID: " + saved.getPaymentSessionId());
+        System.out.println("--------------------------------------------------");
+
+        log.info("Payment link generated for installment {} | Amount: {} | Session: {}", 
+            id, amount, saved.getPaymentSessionId());
+
+        // Send Email
+        try {
+            // Using session ID as the link for now, consider prepending frontend URL if available
+            String paymentUrl = "http://localhost:5173/fee/pay/" + orderId; 
+            emailService.sendPaymentLinkEmail(
+                allocation.getStudentEmail(),
+                allocation.getStudentName(),
+                paymentUrl,
+                amount,
+                installment.getDueDate()
+            );
+        } catch (Exception e) {
+            log.error("Failed to send payment link email for installment: " + id, e);
+        }
+
+        return saved;
     }
 
     @Override
     public List<StudentInstallmentPlan> generateInstallmentsFromStructure(StudentFeeAllocation allocation) {
-        log.info("Generating installments for allocation: {}, count: {}, total: {}", 
-            allocation.getId(), allocation.getInstallmentCount(), allocation.getInstallmentAmount());
+        log.info("Generating installments for allocation: {}, count: {}, installment total: {}, one-time: {}", 
+            allocation.getId(), allocation.getInstallmentCount(), allocation.getInstallmentAmount(), allocation.getOneTimeAmount());
             
          if (repo.existsByStudentFeeAllocationId(allocation.getId())) {
              log.info("Installments already exist for allocation: {}. Skipping generation.", allocation.getId());
@@ -184,26 +236,42 @@ public class StudentInstallmentPlanServiceImpl implements StudentInstallmentPlan
          }
 
          List<StudentInstallmentPlan> installments = new ArrayList<>();
-         int count = allocation.getInstallmentCount() != null ? allocation.getInstallmentCount() : 0;
-         BigDecimal totalAmount = allocation.getInstallmentAmount();
+         int count = (allocation.getInstallmentCount() != null && allocation.getInstallmentCount() > 0) ? allocation.getInstallmentCount() : 1;
+         
+         BigDecimal installmentBase = allocation.getInstallmentAmount() != null ? allocation.getInstallmentAmount() : BigDecimal.ZERO;
+         BigDecimal oneTimeFees = allocation.getOneTimeAmount() != null ? allocation.getOneTimeAmount() : BigDecimal.ZERO;
+         
+         BigDecimal perInstallmentAmt = installmentBase.divide(BigDecimal.valueOf(count), 2, RoundingMode.HALF_UP);
+         BigDecimal totalDistributed = BigDecimal.ZERO;
 
-         if (count > 0 && totalAmount != null) {
-             BigDecimal baseAmount = totalAmount.divide(BigDecimal.valueOf(count), 2, RoundingMode.HALF_UP);
-             for (int i = 1; i <= count; i++) {
-                 StudentInstallmentPlan plan = new StudentInstallmentPlan();
-                 plan.setStudentFeeAllocationId(allocation.getId());
-                 plan.setUserId(allocation.getUserId());
-                 plan.setInstallmentNumber(i);
-                 plan.setLabel("Installment #" + i);
-                 plan.setInstallmentAmount(baseAmount);
-                 plan.setPaidAmount(BigDecimal.ZERO);
-                 plan.setStatus(StudentInstallmentPlan.InstallmentStatus.PENDING);
-                 plan.setDueDate(LocalDate.now().plusMonths(i));
-                 installments.add(plan);
+         for (int i = 1; i <= count; i++) {
+             StudentInstallmentPlan plan = new StudentInstallmentPlan();
+             plan.setStudentFeeAllocationId(allocation.getId());
+             plan.setUserId(allocation.getUserId());
+             plan.setInstallmentNumber(i);
+             plan.setPaidAmount(BigDecimal.ZERO);
+             plan.setStatus(StudentInstallmentPlan.InstallmentStatus.PENDING);
+             plan.setDueDate(LocalDate.now().plusMonths(i - 1)); // Start with current month
+
+             BigDecimal currentAmt = perInstallmentAmt;
+             
+             // 🎯 FIX: Adjust last installment for rounding differences
+             if (i == count) {
+                 currentAmt = installmentBase.subtract(totalDistributed);
+             } else {
+                 totalDistributed = totalDistributed.add(perInstallmentAmt);
              }
-         } else {
-             log.warn("No installments generated for allocation: {} (count: {}, amount: {})", 
-                 allocation.getId(), count, totalAmount);
+
+             // 🎯 FIX: Bundle all one-time fees (Admission, Exam, etc.) into the FIRST installment
+             if (i == 1) {
+                 plan.setInstallmentAmount(currentAmt.add(oneTimeFees));
+                 plan.setLabel(count > 1 ? "Upfront + Term #1" : "Full Payment");
+             } else {
+                 plan.setInstallmentAmount(currentAmt);
+                 plan.setLabel("Term #" + i);
+             }
+
+             installments.add(plan);
          }
 
          List<StudentInstallmentPlan> saved = repo.saveAll(installments);

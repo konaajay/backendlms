@@ -1,6 +1,7 @@
 package com.lms.www.management.service.impl;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,6 +19,7 @@ import com.lms.www.management.model.ExamAttempt;
 import com.lms.www.management.model.ExamQuestion;
 import com.lms.www.management.model.ExamResponse;
 import com.lms.www.management.model.ExamSection;
+import com.lms.www.management.model.ExamSchedule;
 import com.lms.www.management.repository.ExamAttemptRepository;
 import com.lms.www.management.repository.ExamQuestionRepository;
 import com.lms.www.management.repository.ExamRepository;
@@ -25,6 +27,10 @@ import com.lms.www.management.repository.ExamResponseRepository;
 import com.lms.www.management.repository.ExamSectionRepository;
 import com.lms.www.management.repository.QuestionOptionRepository;
 import com.lms.www.management.repository.StudentBatchRepository;
+import com.lms.www.management.repository.ExamScheduleRepository;
+import com.lms.www.management.repository.BatchRepository;
+import com.lms.www.management.repository.CourseRepository;
+import com.lms.www.management.repository.QuestionSectionRepository;
 import com.lms.www.management.service.StudentExamService;
 
 import lombok.RequiredArgsConstructor;
@@ -42,35 +48,112 @@ public class StudentExamServiceImpl implements StudentExamService {
     private final QuestionOptionRepository questionOptionRepository;
     private final ExamQuestionRepository examQuestionRepository;
     private final ExamSectionRepository examSectionRepository;
+    private final ExamScheduleRepository examScheduleRepository;
+    private final BatchRepository batchRepository;
+    private final CourseRepository courseRepository;
+    private final QuestionSectionRepository questionSectionRepository;
+
+    private void populateLabels(Exam exam, List<Long> batchIds) {
+        if (exam == null) return;
+        
+        // Count questions
+        exam.setQuestionCount(examQuestionRepository.countByExamId(exam.getExamId()));
+        
+        // Fetch labels
+        if (exam.getCourseId() != null) {
+            courseRepository.findById(exam.getCourseId()).ifPresent(c -> exam.setCourseName(c.getCourseName()));
+        }
+        if (exam.getBatchId() != null) {
+            batchRepository.findById(exam.getBatchId()).ifPresent(b -> exam.setBatchName(b.getBatchName()));
+        }
+
+        // Fetch schedule to populate timing if not already set
+        if (batchIds != null && !batchIds.isEmpty()) {
+            examScheduleRepository.findByBatchIdInAndIsActiveTrue(batchIds).stream()
+                .filter(s -> s.getExamId().equals(exam.getExamId()))
+                .findFirst()
+                .ifPresent(s -> {
+                    if (exam.getStartTime() == null) {
+                        exam.setStartTime(s.getStartTime());
+                    }
+                    if (exam.getEndTime() == null) {
+                        exam.setEndTime(s.getEndTime());
+                    }
+                });
+        }
+    }
 
     private Exam validateStudentAccessToExam(Long examId, Long studentId) {
         List<Long> batchIds = studentBatchRepository.findByStudentId(studentId).stream()
                 .map(sb -> sb.getBatchId())
                 .collect(Collectors.toList());
 
-        Exam exam = examRepository.findById(examId)
+        // Check if student has direct batch access or via schedule
+        boolean hasAccess = examScheduleRepository.findByBatchIdInAndIsActiveTrue(batchIds).stream()
+                .anyMatch(s -> s.getExamId().equals(examId));
+        
+        if (!hasAccess) {
+             Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new RuntimeException("Exam not found"));
+             if (exam.getBatchId() != null && batchIds.contains(exam.getBatchId())) {
+                 hasAccess = true;
+             }
+        }
 
-        if (exam.getBatchId() != null && !batchIds.contains(exam.getBatchId())) {
+        if (!hasAccess) {
             throw new RuntimeException("Access Denied: You do not have access to this exam via your active batches.");
         }
-        return exam;
+        
+        return examRepository.findById(examId)
+                .orElseThrow(() -> new RuntimeException("Exam not found"));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Exam> getAvailableExamsForStudent(Long studentId) {
         List<Long> batchIds = studentBatchRepository.findByStudentId(studentId).stream()
                 .map(sb -> sb.getBatchId())
                 .collect(Collectors.toList());
-        return examRepository.findByBatchIdInAndIsDeletedFalse(batchIds);
+        
+        // Find exams via active schedules
+        List<Long> scheduledExamIds = examScheduleRepository.findByBatchIdInAndIsActiveTrue(batchIds).stream()
+                .map(ExamSchedule::getExamId)
+                .distinct()
+                .collect(Collectors.toList());
+        
+        // Combine with direct batch-linked exams
+        List<Exam> exams = new ArrayList<>(examRepository.findByBatchIdInAndIsDeletedFalse(batchIds));
+        
+        if (!scheduledExamIds.isEmpty()) {
+            List<Exam> scheduledExams = examRepository.findAllById(scheduledExamIds).stream()
+                    .filter(e -> !e.getIsDeleted())
+                    .collect(Collectors.toList());
+            
+            // Merge lists
+            scheduledExams.forEach(se -> {
+                if (exams.stream().noneMatch(e -> e.getExamId().equals(se.getExamId()))) {
+                    exams.add(se);
+                }
+            });
+        }
+        
+        exams.forEach(e -> populateLabels(e, batchIds));
+        return exams;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Exam getExamDetails(Long examId, Long studentId) {
-        return validateStudentAccessToExam(examId, studentId);
+        Exam exam = validateStudentAccessToExam(examId, studentId);
+        List<Long> batchIds = studentBatchRepository.findByStudentId(studentId).stream()
+                .map(sb -> sb.getBatchId())
+                .collect(Collectors.toList());
+        populateLabels(exam, batchIds);
+        return exam;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<StudentExamSectionDTO> getExamQuestions(Long examId, Long studentId) {
         validateStudentAccessToExam(examId, studentId);
 
@@ -79,6 +162,10 @@ public class StudentExamServiceImpl implements StudentExamService {
         return sections.stream().map(section -> {
             List<ExamQuestion> questions = examQuestionRepository
                     .findByExamSectionIdOrderByQuestionOrderAsc(section.getExamSectionId());
+
+            // Fetch actual section details from QuestionSection table
+            com.lms.www.management.model.QuestionSection qs = questionSectionRepository.findById(section.getSectionId())
+                .orElse(null);
 
             List<StudentExamQuestionDTO> questionDTOs = questions.stream().map(eq -> {
                 com.lms.www.management.model.Question q = eq.getQuestion();
@@ -110,17 +197,21 @@ public class StudentExamServiceImpl implements StudentExamService {
             return StudentExamSectionDTO.builder()
                     .examSectionId(section.getExamSectionId())
                     .sectionId(section.getSectionId())
+                    .sectionName(qs != null ? qs.getSectionName() : "Unnamed Section")
+                    .sectionDescription(qs != null ? qs.getSectionDescription() : "")
                     .sectionOrder(section.getSectionOrder())
                     .shuffleQuestions(section.getShuffleQuestions())
                     .questions(questionDTOs)
                     .build();
-        }).collect(Collectors.toList());
+        })
+        .filter(dto -> !dto.getQuestions().isEmpty()) // Only show sections that have questions
+        .collect(Collectors.toList());
     }
 
     @Override
     public ExamAttempt getActiveAttempt(Long examId, Long studentId) {
         return examAttemptRepository.findFirstByExamIdAndStudentIdAndStatus(examId, studentId, "IN_PROGRESS")
-                .orElseThrow(() -> new RuntimeException("No active attempt found."));
+                .orElse(null);
     }
 
     @Override
@@ -256,12 +347,31 @@ public class StudentExamServiceImpl implements StudentExamService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<StudentExamAttemptResultDTO> getStudentExamAttempts(Long studentId) {
         List<ExamAttempt> attempts = examAttemptRepository.findByStudentId(studentId);
         return attempts.stream().map(attempt -> {
             Exam exam = examRepository.findById(attempt.getExamId()).orElse(null);
             return buildResultDTO(attempt, exam);
         }).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public StudentExamAttemptResultDTO getSpecificAttemptResult(Long examId, Long attemptId, Long studentId) {
+        ExamAttempt attempt = examAttemptRepository.findById(attemptId)
+                .orElseThrow(() -> new RuntimeException("Attempt not found"));
+
+        if (studentId != null && !attempt.getStudentId().equals(studentId)) {
+            throw new RuntimeException("Unauthorized access to this attempt");
+        }
+
+        if (examId != null && !attempt.getExamId().equals(examId)) {
+            throw new RuntimeException("Attempt does not belong to this exam");
+        }
+
+        Exam exam = examRepository.findById(attempt.getExamId()).orElse(null);
+        return buildResultDTO(attempt, exam);
     }
 
     private StudentExamAttemptResultDTO buildResultDTO(ExamAttempt attempt, Exam exam) {
@@ -287,6 +397,7 @@ public class StudentExamServiceImpl implements StudentExamService {
                 .totalMarks(exam != null ? exam.getTotalMarks() : 0)
                 .percentage(percentage)
                 .isPassed(isPassed)
+                .responses(examResponseRepository.findByAttemptId(attempt.getAttemptId()))
                 .build();
     }
 }

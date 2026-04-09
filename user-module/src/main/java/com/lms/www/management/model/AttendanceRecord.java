@@ -15,7 +15,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Table(name = "attendance_record", uniqueConstraints = {
-        @UniqueConstraint(name = "uq_session_student_attendance", columnNames = { "session_id", "student_id" })
+        @UniqueConstraint(name = "uq_session_student_attendance", columnNames = { "attendance_session_id",
+                "student_id" })
 })
 public class AttendanceRecord {
 
@@ -59,9 +60,12 @@ public class AttendanceRecord {
 
     @PrePersist
     protected void onCreate() {
-        if (this.status == null) this.status = "PRESENT";
-        if (this.source == null) this.source = "MANUAL";
-        if (this.markedAt == null) this.markedAt = LocalDateTime.now();
+        if (this.status == null)
+            this.status = "PRESENT";
+        if (this.source == null)
+            this.source = "MANUAL";
+        if (this.markedAt == null)
+            this.markedAt = LocalDateTime.now();
     }
 
     public Long getAttendanceRecordId() {

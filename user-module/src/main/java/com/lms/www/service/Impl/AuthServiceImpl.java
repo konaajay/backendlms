@@ -289,21 +289,99 @@ public class AuthServiceImpl implements AuthService {
                     permissions = permissions.stream().distinct().toList();
                 }
             } else {
-                permissions = userPermissionRepository
+                permissions = new java.util.ArrayList<>(userPermissionRepository
                         .findByUser_UserId(user.getUserId())
                         .stream()
                         .map(UserPermission::getPermissionName)
                         .distinct()
-                        .toList();
+                        .toList());
+                
+                // 🎓 STUDENT → ADD STANDARDIZED PERMISSIONS
+                if ("ROLE_STUDENT".equals(user.getRoleName()) || "STUDENT".equalsIgnoreCase(user.getRoleName())) {
+                    List<String> studentPerms = List.of(
+                        "STUDENT_AFFILIATE_VIEW", "STUDENT_AFFILIATE_REGISTER", "STUDENT_AFFILIATE_JOIN",
+                        "DASHBOARD_VIEW", "STUDENT_DASHBOARD_VIEW", "STUDENT_LEDGER_VIEW", "STUDENT_PAYMENT_CREATE",
+                        "EXAM_STUDENT_VIEW", "EXAM_ATTEMPT_VIEW", "EXAM_ATTEMPT_START", "EXAM_ATTEMPT_SUBMIT", "EXAM_RESPONSE_SAVE",
+                        "STUDENT_BATCH_SELF_VIEW", "ALLOCATION_VIEW_SELF", "CERTIFICATE_VIEW_SELF",
+                        "ATTENDANCE_RECORD_VIEW", "STUDENT_CALENDAR_VIEW", "STUDENT_HELPDESK_VIEW"
+                    );
+                    for (String perm : studentPerms) {
+                        if (!permissions.contains(perm)) {
+                            permissions.add(perm);
+                        }
+                    }
+                }
+            }
+
+            // --- PREPARE TOKEN CLAIMS ---
+            List<String> rolesList = List.of(user.getRoleName().toUpperCase());
+            boolean isEnrolled = true;
+            Long driverId = null;
+            Long parentId = null;
+
+            // 🎓 STUDENT/USER/PARENT/LEAD ENROLLMENT CHECK
+            if (rolesList.contains("ROLE_STUDENT") || rolesList.contains("ROLE_USER") || rolesList.contains("ROLE_PARENT") || rolesList.contains("ROLE_LEAD") || rolesList.contains("STUDENT") || rolesList.contains("LEAD")) {
+                try {
+                    Long studentId = jdbcTemplate.queryForObject(
+                            "SELECT student_id FROM students WHERE user_id = ?",
+                            Long.class,
+                            user.getUserId()
+                    );
+
+                    Integer count = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM student_batch_enrollment WHERE student_id = ?",
+                            Integer.class,
+                            studentId
+                    );
+                    isEnrolled = count != null && count > 0;
+                } catch (Exception e) {
+                    // Default enrollment status if record or batch check fails
+                    if (rolesList.contains("ROLE_STUDENT") || rolesList.contains("STUDENT") || rolesList.contains("LEAD") || rolesList.contains("ROLE_LEAD")) {
+                        isEnrolled = false;
+                    } else {
+                        isEnrolled = true;
+                    }
+                }
+            }
+
+            // 🚌 DRIVER ID FETCH
+            if (rolesList.contains("ROLE_DRIVER") || rolesList.contains("DRIVER")) {
+                try {
+                    driverId = jdbcTemplate.queryForObject(
+                        "SELECT driver_id FROM drivers WHERE user_id = ?",
+                        Long.class,
+                        user.getUserId()
+                    );
+                } catch (Exception e) {
+                    driverId = null;
+                }
+            }
+            
+            // 👪 PARENT ID FETCH
+            if (rolesList.contains("ROLE_PARENT") || rolesList.contains("PARENT")) {
+                try {
+                    parentId = jdbcTemplate.queryForObject(
+                        "SELECT parent_id FROM parents WHERE user_id = ?",
+                        Long.class,
+                        user.getUserId()
+                    );
+                } catch (Exception e) {
+                    parentId = null;
+                }
             }
 
             String token = jwtUtil.generateToken(
                     user.getUserId(),
                     user.getEmail(),
-                    List.of(user.getRoleName()),
+                    rolesList,
                     permissions,
-                    tenantDb);
+                    tenantDb,
+                    isEnrolled,
+                    driverId,
+                    parentId
+            );
 
+            // --- SAVE SESSION AND RETURN ---
             UserSession session = new UserSession();
             session.setUser(user);
             session.setToken(token);

@@ -35,7 +35,8 @@ public class VideoMetadataUtil {
 	        return (int) Math.round(duration);
 
 	    } catch (Exception e) {
-	        throw new RuntimeException("Failed to extract video duration", e);
+	        System.err.println("FFmpeg not found or failed. Proceeding without duration. Error: " + e.getMessage());
+	        return 0;
 	    }
 	}
 	

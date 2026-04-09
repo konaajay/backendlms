@@ -14,6 +14,9 @@ import com.lms.www.campus.Library.*;
 import com.lms.www.campus.repository.Library.*;
 import com.lms.www.campus.service.LibraryService;
 import com.lms.www.repository.UserRepository;
+import com.lms.www.model.User;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import java.util.Arrays;
 
 @Service
@@ -97,6 +100,23 @@ public class LibraryServiceImpl implements LibraryService {
 
         book.setCategory(category);
         sanitizeBook(book);
+
+        // Record the creator
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getName() != null && !auth.getName().equals("anonymousUser")) {
+            try {
+                User u = userRepository.findByEmail(auth.getName()).orElse(null);
+                if (u != null) {
+                    book.setCreatedBy(u.getFirstName() + " " + (u.getLastName() != null ? u.getLastName() : ""));
+                } else {
+                    book.setCreatedBy(auth.getName());
+                }
+            } catch (Exception e) {
+                book.setCreatedBy(auth.getName());
+            }
+        } else {
+            book.setCreatedBy("Admin");
+        }
 
         if (book.getTotalCopies() == null) {
             book.setTotalCopies(1);

@@ -12,4 +12,6 @@ public interface InstructorSessionService {
     void deleteSession(Long instructorId, Long sessionId);
 
     List<Session> getSessionsByBatchId(Long instructorId, Long batchId);
+    
+    Session getSessionById(Long instructorId, Long sessionId);
 }

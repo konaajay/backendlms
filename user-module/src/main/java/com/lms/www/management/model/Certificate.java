@@ -3,6 +3,7 @@ package com.lms.www.management.model;
 import java.time.LocalDateTime;
 
 import com.lms.www.management.enums.CertificateStatus;
+import com.lms.www.management.enums.TargetType;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -19,16 +20,13 @@ public class Certificate {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private Long certificateId;
+    private Long id;
 
     @Column(name = "certificate_id", unique = true, nullable = false)
-    private String certificateNumber;
+    private String certificateId; // Real certificate number (e.g. CERT-123)
 
     @Column(name = "user_id", nullable = false)
     private Long studentId;
-
-    @Column(name = "course_id")
-    private Long courseId;
 
     @Column(name = "template_id", nullable = false)
     private Long templateId;
@@ -47,9 +45,6 @@ public class Certificate {
     @Column(name = "verification_token")
     private String verificationToken;
 
-    @Column(name = "download_url")
-    private String downloadUrl;
-
     @Builder.Default
     @Column(name = "version")
     private Integer version = 1;
@@ -61,8 +56,6 @@ public class Certificate {
     @Builder.Default
     @Column(name = "updated_at")
     private LocalDateTime updatedAt = LocalDateTime.now();
-
-    // --- Restored Fields & Aliases for Service Compatibility ---
 
     @Column(name = "pdf_url")
     private String pdfUrl;
@@ -85,27 +78,24 @@ public class Certificate {
     @Column(name = "score")
     private Double score;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "target_type")
-    private String targetType;
+    private TargetType targetType;
 
     @Column(name = "target_id")
     private Long targetId;
 
-    // --- JPA Mirror Fields for Repository Compatibility ---
+    // --- Aliases for Service/Legacy Compatibility ---
+    
+    // Some code uses getCertificateNumber/setCertificateNumber
+    public String getCertificateNumber() { return certificateId; }
+    public void setCertificateNumber(String val) { this.certificateId = val; }
+
     @Column(name = "user_id", insertable = false, updatable = false)
     private Long userId;
 
     @Column(name = "issued_date", insertable = false, updatable = false)
     private LocalDateTime issuedDate;
-
-    // Alias for JPA/Service common naming
-    public Long getId() {
-        return this.certificateId;
-    }
-
-    public LocalDateTime getIssuedDate() {
-        return this.issueDate;
-    }
 
     @PrePersist
     protected void onCreate() {

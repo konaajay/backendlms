@@ -23,6 +23,12 @@ public class Lead {
     private Long batchId;
     private Long courseId;
 
+    @Column(name = "course_interest")
+    private String courseInterest;
+
+    @Column(name = "referral_code")
+    private String referralCode;
+
     // Lead source tracking
     private String source;
     private String utmSource;
@@ -33,17 +39,6 @@ public class Lead {
 
     private String ipAddress;
 
-    private LocalDateTime createdAt;
-
-    // Manual accessors to resolve Lombok processing issues
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-    public Long getBatchId() { return batchId; }
-    public void setBatchId(Long batchId) { this.batchId = batchId; }
-    public Long getCourseId() { return courseId; }
-    public void setCourseId(Long courseId) { this.courseId = courseId; }
-    public String getIpAddress() { return ipAddress; }
-    public void setIpAddress(String ipAddress) { this.ipAddress = ipAddress; }
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
 }

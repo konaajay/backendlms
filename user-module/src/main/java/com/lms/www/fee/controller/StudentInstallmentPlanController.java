@@ -23,7 +23,7 @@ public class StudentInstallmentPlanController {
     // ================= ADMIN =================
 
     @PostMapping("/student")
-    @PreAuthorize("hasAuthority('INSTALLMENT_CREATE')")
+    @PreAuthorize("hasAnyAuthority('INSTALLMENT_CREATE', 'ALLOCATION_CREATE', 'FEE_STRUCTURE_CREATE') or hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<List<InstallmentPlanResponse>> createForStudent(
             @RequestParam Long allocationId,
             @Valid @RequestBody List<InstallmentPlanRequest> plans) {
@@ -31,7 +31,7 @@ public class StudentInstallmentPlanController {
     }
 
     @RequestMapping(value = {"/override", "/override/{allocationId}"}, method = {RequestMethod.POST, RequestMethod.PUT})
-    @PreAuthorize("hasAnyAuthority('INSTALLMENT_RESET', 'INSTALLMENT_UPDATE', 'INSTALLMENT_CREATE', 'FEE_STRUCTURE_CREATE')")
+    @PreAuthorize("hasAnyAuthority('INSTALLMENT_RESET', 'INSTALLMENT_UPDATE', 'INSTALLMENT_CREATE', 'FEE_STRUCTURE_CREATE', 'ALLOCATION_CREATE') or hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<List<InstallmentPlanResponse>> override(
             @PathVariable(required = false) Long allocationId,
             @RequestParam(value = "allocationId", required = false) Long allocationIdQuery,

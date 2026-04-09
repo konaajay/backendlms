@@ -27,7 +27,7 @@ public class StudentVideoProgressController {
      * VIDEO HEARTBEAT UPDATE
      * Only STUDENT can update progress.
      */
-    @PostMapping("/watch-update")
+    @PostMapping("/update")
     @PreAuthorize("hasAuthority('VIDEO_PROGRESS_UPDATE')")
     public ResponseEntity<Map<String, Object>> updateWatchProgress(
             @RequestBody Map<String, Object> payload,

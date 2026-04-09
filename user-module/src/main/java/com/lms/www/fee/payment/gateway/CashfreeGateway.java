@@ -63,6 +63,11 @@ public class CashfreeGateway {
                 new ParameterizedTypeReference<Map<String, Object>>() {}
             );
             Map<String, Object> body = response.getBody();
+            System.out.println("--------------------------------------------------");
+            System.out.println("💰 CASHFREE API RESPONSE");
+            System.out.println("Status Code: " + response.getStatusCode());
+            System.out.println("Body: " + body);
+            System.out.println("--------------------------------------------------");
 
             if (body != null && body.containsKey("payment_session_id")) {
                 return Map.of(

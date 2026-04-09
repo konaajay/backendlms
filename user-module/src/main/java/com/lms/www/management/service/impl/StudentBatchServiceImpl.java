@@ -197,4 +197,9 @@ public class StudentBatchServiceImpl implements StudentBatchService {
 
         return enrolledCount;
     }
+
+    @Override
+    public List<StudentBatch> getAllEnrollments() {
+        return studentBatchRepository.findAll();
+    }
 }

@@ -13,6 +13,7 @@ import com.lms.www.fee.admin.entity.ReminderJob;
 import com.lms.www.fee.allocation.entity.StudentFeeAllocation;
 import com.lms.www.fee.installment.entity.StudentInstallmentPlan;
 import com.lms.www.fee.penalty.repository.FeePenaltyRepository;
+import com.lms.www.fee.penalty.service.PenaltyService;
 import com.lms.www.fee.admin.repository.ReminderJobRepository;
 import com.lms.www.fee.allocation.repository.StudentFeeAllocationRepository;
 import com.lms.www.fee.installment.repository.StudentInstallmentPlanRepository;
@@ -29,6 +30,7 @@ public class ReminderEngineService {
     private final StudentInstallmentPlanRepository installmentRepository;
     private final StudentFeeAllocationRepository allocationRepository;
     private final FeePenaltyRepository penaltyRepository;
+    private final PenaltyService penaltyService;
     private final PaymentGatewayService paymentGatewayService;
     private final EmailService emailService;
 
@@ -77,9 +79,16 @@ public class ReminderEngineService {
 
             // Requirement 3: Add late fee if today > dueDate
             if (LocalDate.now().isAfter(inst.getDueDate())) {
-                BigDecimal penalty = penaltyRepository.getTotalPenaltyByInstallmentId(inst.getId());
-                if (penalty != null) {
-                    finalAmount = finalAmount.add(penalty);
+                BigDecimal autoCalculatedPenalty = penaltyService.calculatePenalty(inst.getId());
+                if (autoCalculatedPenalty != null && autoCalculatedPenalty.compareTo(BigDecimal.ZERO) > 0) {
+                    finalAmount = finalAmount.add(autoCalculatedPenalty);
+                    log.info("Auto-calculated penalty for installment {}: {}", inst.getId(), autoCalculatedPenalty);
+                } else {
+                    // Fallback to repository for manually applied penalties
+                    BigDecimal manualPenalty = penaltyRepository.getTotalPenaltyByInstallmentId(inst.getId());
+                    if (manualPenalty != null) {
+                        finalAmount = finalAmount.add(manualPenalty);
+                    }
                 }
             }
 
@@ -106,7 +115,7 @@ public class ReminderEngineService {
             String payUrl = lmsBaseUrl + "/pay/" + orderId;
             emailService.sendPaymentLinkEmail(
                     allocation.getStudentEmail(),
-                    allocation.getStudentName(),
+                    allocation.getStudentName() != null ? allocation.getStudentName() : "Student",
                     payUrl,
                     finalAmount,
                     inst.getDueDate());

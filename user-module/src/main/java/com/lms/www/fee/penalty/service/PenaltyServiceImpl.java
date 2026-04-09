@@ -7,6 +7,10 @@ import com.lms.www.fee.dto.FeeMapper;
 import com.lms.www.fee.penalty.entity.PenaltyType;
 import com.lms.www.fee.penalty.entity.FeePenaltySlab;
 import com.lms.www.fee.penalty.entity.FeePenalty;
+import com.lms.www.fee.allocation.entity.StudentFeeAllocation;
+import com.lms.www.fee.allocation.repository.StudentFeeAllocationRepository;
+import com.lms.www.fee.installment.entity.StudentInstallmentPlan;
+import com.lms.www.fee.installment.repository.StudentInstallmentPlanRepository;
 import com.lms.www.fee.penalty.repository.FeePenaltyRepository;
 import com.lms.www.fee.penalty.repository.FeePenaltySlabRepository;
 import com.lms.www.security.UserContext;
@@ -19,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -31,14 +36,43 @@ public class PenaltyServiceImpl implements PenaltyService {
 
     private final FeePenaltyRepository penaltyRepository;
     private final FeePenaltySlabRepository slabRepository;
+    private final StudentInstallmentPlanRepository installmentRepository;
+    private final StudentFeeAllocationRepository allocationRepository;
     private final UserContext userContext;
 
     @Override
     public BigDecimal calculatePenalty(Long installmentId) {
-        return slabRepository.findAll().stream()
-                .filter(FeePenaltySlab::isActive)
+        StudentInstallmentPlan plan = installmentRepository.findById(installmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Installment not found"));
+
+        if (!LocalDate.now().isAfter(plan.getDueDate())) {
+            return BigDecimal.ZERO;
+        }
+
+        long daysOverdue = ChronoUnit.DAYS.between(plan.getDueDate(), LocalDate.now());
+        
+        StudentFeeAllocation allocation = allocationRepository.findById(plan.getStudentFeeAllocationId())
+                .orElseThrow(() -> new ResourceNotFoundException("Allocation not found"));
+                
+        Long structureId = allocation.getFeeStructureId();
+        if (structureId == null) {
+            return BigDecimal.ZERO;
+        }
+
+        List<FeePenaltySlab> slabs = slabRepository.findByFeeStructureId(structureId);
+        
+        return slabs.stream()
+                .filter(s -> Boolean.TRUE.equals(s.isActive()))
+                .filter(s -> daysOverdue >= s.getFromDay() && (s.getToDay() == null || daysOverdue <= s.getToDay()))
                 .findFirst()
-                .map(s -> s.getPenaltyType() == PenaltyType.FIXED ? s.getValue() : s.getValue().multiply(BigDecimal.ONE))
+                .map(s -> {
+                    if (s.getPenaltyType() == PenaltyType.FIXED) {
+                        return s.getValue();
+                    } else if (s.getPenaltyType() == PenaltyType.PER_DAY) {
+                        return s.getValue().multiply(BigDecimal.valueOf(daysOverdue));
+                    }
+                    return BigDecimal.ZERO;
+                })
                 .orElse(BigDecimal.ZERO);
     }
 

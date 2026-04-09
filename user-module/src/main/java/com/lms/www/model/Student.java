@@ -40,7 +40,8 @@ public class Student {
     private LocalDate dob;
     private String gender;
 
-    @OneToMany(mappedBy = "student", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "student", fetch = FetchType.LAZY)
     @JsonManagedReference
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private List<ParentStudentRelation> parents;
 }

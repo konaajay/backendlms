@@ -23,6 +23,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "campaigns")
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
 public class Campaign {
 
     @Id
@@ -35,6 +36,9 @@ public class Campaign {
 
     @Column(name = "subject", length = 200)
     private String subject; 
+
+    @Column(name = "content", columnDefinition = "TEXT")
+    private String content;
 
     @Column(name = "campaign_type", length = 50)
     private String campaignType;
@@ -79,6 +83,8 @@ public class Campaign {
     public void setCampaignName(String name) { this.campaignName = name; }
     public String getSubject() { return subject; }
     public void setSubject(String subject) { this.subject = subject; }
+    public String getContent() { return content; }
+    public void setContent(String content) { this.content = content; }
     public String getCampaignType() { return campaignType; }
     public void setCampaignType(String type) { this.campaignType = type; }
     public LocalDate getStartDate() { return startDate; }

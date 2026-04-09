@@ -25,7 +25,7 @@ public class StockOutwardController {
 
     // ✅ ISSUE STOCK
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('STOCK_INWARD_CREATE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('STOCK_INWARD_CREATE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS')")
     public ResponseEntity<StockOutward> issueStock(@RequestBody StockOutward stockOutward) {
 
         return ResponseEntity.status(201)
@@ -34,7 +34,7 @@ public class StockOutwardController {
 
     // ✅ GET ALL
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('STOCK_INWARD_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('STOCK_INWARD_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS')")
     public ResponseEntity<List<StockOutward>> getAllIssuedStocks() {
 
         return ResponseEntity.ok(stockOutwardService.getAllIssuedStocks());

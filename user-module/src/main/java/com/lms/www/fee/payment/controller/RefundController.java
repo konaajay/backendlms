@@ -18,44 +18,44 @@ public class RefundController {
 
     private final RefundService refundService;
 
-    @PostMapping("/request")
-    @PreAuthorize("hasAuthority('REFUND_CREATE')")
+    @PostMapping
+    @PreAuthorize("hasAnyAuthority('REFUND_CREATE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<RefundResponse> createRefund(@Valid @RequestBody RefundRequest request) {
         return ResponseEntity.ok(refundService.createRefund(request));
     }
 
     @GetMapping("/my")
-    @PreAuthorize("hasAuthority('REFUND_VIEW_SELF')")
+    @PreAuthorize("hasAnyAuthority('REFUND_VIEW_SELF', 'ROLE_STUDENT', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<List<RefundResponse>> getMyRefunds() {
         return ResponseEntity.ok(refundService.getMyRefunds());
     }
 
-    @GetMapping("/all")
-    @PreAuthorize("hasAuthority('REFUND_VIEW')")
+    @GetMapping
+    @PreAuthorize("hasAnyAuthority('REFUND_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<List<RefundResponse>> getAllRefundRequests() {
         return ResponseEntity.ok(refundService.getAllRefundRequests());
     }
 
     @GetMapping("/allocation/{allocationId}")
-    @PreAuthorize("hasAuthority('REFUND_VIEW')")
+    @PreAuthorize("hasAnyAuthority('REFUND_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<List<RefundResponse>> getRefundsByAllocation(@PathVariable Long allocationId) {
         return ResponseEntity.ok(refundService.getRefundsByAllocation(allocationId));
     }
 
-    @PostMapping("/approve/{id}")
-    @PreAuthorize("hasAuthority('REFUND_APPROVE')")
+    @PostMapping("/{id}/approve")
+    @PreAuthorize("hasAnyAuthority('REFUND_APPROVE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<RefundResponse> approveRefund(@PathVariable Long id) {
         return ResponseEntity.ok(refundService.approveRefund(id));
     }
 
-    @PostMapping("/reject/{id}")
-    @PreAuthorize("hasAuthority('REFUND_REJECT')")
+    @PostMapping("/{id}/reject")
+    @PreAuthorize("hasAnyAuthority('REFUND_REJECT', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<RefundResponse> rejectRefund(@PathVariable Long id, @RequestParam String reason) {
         return ResponseEntity.ok(refundService.rejectRefund(id, reason));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('REFUND_DELETE')")
+    @PreAuthorize("hasAnyAuthority('REFUND_DELETE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<Void> deleteRefundRequest(@PathVariable Long id) {
         refundService.deleteRefundRequest(id);
         return ResponseEntity.noContent().build();

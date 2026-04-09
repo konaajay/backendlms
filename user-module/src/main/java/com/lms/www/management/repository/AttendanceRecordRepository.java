@@ -23,6 +23,7 @@ public interface AttendanceRecordRepository
                         Long studentId);
 
         List<AttendanceRecord> findByStudentId(Long studentId);
+        List<AttendanceRecord> findByStudentIdAndBatchId(Long studentId, Long batchId);
 
         List<AttendanceRecord> findByStudentIdAndAttendanceSessionIdIn(
                         Long studentId,
@@ -66,4 +67,6 @@ public interface AttendanceRecordRepository
                         LocalDate attendanceDate);
 
         List<AttendanceRecord> findByBatchIdAndAttendanceDate(Long batchId, LocalDate date);
+
+        List<AttendanceRecord> findByBatchId(Long batchId);
 }

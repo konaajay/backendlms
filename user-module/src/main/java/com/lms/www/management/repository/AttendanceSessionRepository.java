@@ -16,11 +16,12 @@ import com.lms.www.management.model.AttendanceSession;
 public interface AttendanceSessionRepository
         extends JpaRepository<AttendanceSession, Long> {
 
-    // ✅ Ensure only one ACTIVE attendance per session
     Optional<AttendanceSession> findBySessionIdAndStatus(
             Long sessionId,
             String status
     );
+
+    Optional<AttendanceSession> findBySessionIdAndBatchId(Long sessionId, Long batchId);
 
     // ✅ Get attendance sessions by DATE (using startedAt)
     @Query("""
@@ -46,6 +47,8 @@ public interface AttendanceSessionRepository
     );
     
     List<AttendanceSession> findByCourseIdAndBatchId(Long courseId, Long batchId);
+
+    List<AttendanceSession> findByBatchIdOrderByStartedAtDesc(Long batchId);
     
     @Query("""
     	    SELECT a.id

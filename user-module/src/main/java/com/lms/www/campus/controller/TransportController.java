@@ -345,6 +345,21 @@ public class TransportController {
                 transportService.getAllAttendance());
     }
 
+    // Get attendance by vehicle and date
+    @PreAuthorize("hasAuthority('TRANSPORT_ATTENDANCE_VIEW') or hasAuthority('ALL_PERMISSIONS')")
+    @GetMapping("/attendance/vehicle/{vehicleId}")
+    public ResponseEntity<List<TransportAttendance>> getAttendanceByVehicleAndDate(
+            @PathVariable Long vehicleId,
+            @RequestParam(required = false) String date) {
+
+        java.time.LocalDate attendanceDate = (date != null)
+                ? java.time.LocalDate.parse(date)
+                : java.time.LocalDate.now();
+
+        return ResponseEntity.ok(
+                transportService.getAttendanceByVehicleAndDate(vehicleId, attendanceDate));
+    }
+
     // Update
     @PreAuthorize("hasAuthority('TRANSPORT_ATTENDANCE_UPDATE') or hasAuthority('ALL_PERMISSIONS')")
     @PutMapping("/attendance/{id}")
@@ -426,6 +441,16 @@ public class TransportController {
 
         transportService.deleteStudentTransportAssignment(id);
         return ResponseEntity.ok("Assignment deleted successfully");
+    }
+
+    // READ – BY VEHICLE
+    @PreAuthorize("hasAnyAuthority('ASSIGNMENT_VIEW') or hasAuthority('ALL_PERMISSIONS')")
+    @GetMapping("/assignments/vehicle/{vehicleId}")
+    public ResponseEntity<List<StudentTransportAssignment>> getAssignmentsByVehicle(
+            @PathVariable Long vehicleId) {
+
+        return ResponseEntity.ok(
+                transportService.getVehicleAssignments(vehicleId));
     }
 
     /* ===================== FUEL LOGS ===================== */

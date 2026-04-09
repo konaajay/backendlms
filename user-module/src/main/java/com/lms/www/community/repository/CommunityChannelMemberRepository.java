@@ -15,4 +15,6 @@ public interface CommunityChannelMemberRepository
     List<CommunityChannelMember> findByUserId(Long userId);
     
     Optional<CommunityChannelMember> findByChannelIdAndUserId(Long channelId, Long userId);
+
+    List<CommunityChannelMember> findByChannelIdIn(List<Long> channelIds);
 }

@@ -25,7 +25,7 @@ public class ExamDesignController {
 
     // Create or update exam design (DRAFT only)
     @PostMapping("/upload")
-    @PreAuthorize("hasAnyAuthority('EXAM_DESIGN_UPDATE', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @PreAuthorize("hasAnyAuthority('EXAM_DESIGN_UPDATE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<ExamDesign> uploadDesign(
             @PathVariable Long examId,
             @RequestParam String orientation,
@@ -50,7 +50,7 @@ public class ExamDesignController {
 
     // Get exam design (read-only)
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('EXAM_DESIGN_VIEW', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @PreAuthorize("hasAnyAuthority('EXAM_DESIGN_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<ExamDesign> getDesign(@PathVariable Long examId) {
         return ResponseEntity.ok(
                 examDesignService.getDesignByExamId(examId)

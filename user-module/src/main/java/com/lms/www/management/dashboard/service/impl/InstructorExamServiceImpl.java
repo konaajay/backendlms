@@ -111,6 +111,7 @@ public class InstructorExamServiceImpl implements InstructorExamService {
         Double oldScore = res.getMarksAwarded() != null ? res.getMarksAwarded() : 0.0;
 
         res.setMarksAwarded(request.getMarksAwarded());
+        res.setFeedback(request.getFeedback());
         examResponseRepository.save(res);
 
         ExamEvaluationLog log = new ExamEvaluationLog();

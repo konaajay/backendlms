@@ -30,6 +30,12 @@ public class TopicServiceImpl implements TopicService {
                 );
 
         topic.setCourse(course);
+        
+        if (topic.getSequenceOrder() == null) {
+            long count = topicRepository.countByCourseCourseId(courseId);
+            topic.setSequenceOrder((int) count + 1);
+        }
+
         return topicRepository.save(topic);
     }
 

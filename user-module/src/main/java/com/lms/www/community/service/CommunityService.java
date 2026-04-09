@@ -92,5 +92,7 @@ java.util.Map<String, Object> getMarketingCommunity();
 
 void removeLeadFromMarketingChannel(Long userId);
 
-void addLeadToCommunity(Long id, Long courseId, Long batchId);
+    void addLeadToCommunity(Long id, Long courseId, Long batchId);
+
+    List<java.util.Map<String, Object>> getSpaceMembers(Long spaceId);
 }

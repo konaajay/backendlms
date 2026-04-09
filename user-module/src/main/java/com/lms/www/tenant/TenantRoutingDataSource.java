@@ -58,6 +58,11 @@ public class TenantRoutingDataSource extends AbstractRoutingDataSource {
         ds.setJdbcUrl(jdbcUrl.replace("/master_db", "/" + tenantDb));
         ds.setUsername(username);
         ds.setPassword(password);
+        ds.setMaximumPoolSize(2); // 🔥 LIMIT CONCURRENT CONNECTIONS PER TENANT
+        ds.setPoolName("HikariPool-" + tenantDb); // 🔥 Better debugging
+        ds.setIdleTimeout(30000); // 30 seconds
+        ds.setMinimumIdle(0); // Allow scale down to 0
+        ds.setConnectionTimeout(20000); // 20s timeout
 
         tenantDataSources.put(tenantDb, ds);
         super.afterPropertiesSet();

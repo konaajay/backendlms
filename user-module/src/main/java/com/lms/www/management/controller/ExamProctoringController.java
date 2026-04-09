@@ -5,8 +5,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.lms.www.management.model.ExamProctoring;
@@ -23,8 +25,8 @@ public class ExamProctoringController {
     }
 
     // Create / update proctoring rules (DRAFT only)
-    @PostMapping
-    @PreAuthorize("hasAnyAuthority('EXAM_PROCTORING_UPDATE', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @RequestMapping(method = {RequestMethod.POST, RequestMethod.PUT})
+    @PreAuthorize("hasAnyAuthority('EXAM_PROCTORING_UPDATE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<ExamProctoring> saveProctoring(
             @PathVariable Long examId,
             @RequestBody ExamProctoring proctoring) {
@@ -36,7 +38,7 @@ public class ExamProctoringController {
 
     // Get proctoring rules (read-only)
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('EXAM_PROCTORING_VIEW', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @PreAuthorize("hasAnyAuthority('EXAM_PROCTORING_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<ExamProctoring> getProctoring(
             @PathVariable Long examId) {
 

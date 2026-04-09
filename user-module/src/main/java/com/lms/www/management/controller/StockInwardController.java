@@ -27,7 +27,7 @@ public class StockInwardController {
 
     // ✅ CREATE (JSON ONLY)
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('STOCK_INWARD_CREATE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('STOCK_INWARD_CREATE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS')")
     public ResponseEntity<StockInward> createStockInward(
             @RequestBody StockInward stockInward) {
 
@@ -37,7 +37,7 @@ public class StockInwardController {
 
     // ✅ UPLOAD FILE
     @PutMapping("/{id}/upload")
-    @PreAuthorize("hasAnyAuthority('STOCK_INWARD_CREATE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('STOCK_INWARD_CREATE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS')")
     public ResponseEntity<StockInward> uploadInvoice(
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file) {
@@ -47,14 +47,14 @@ public class StockInwardController {
 
     // ✅ GET ALL
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('STOCK_INWARD_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('STOCK_INWARD_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS')")
     public ResponseEntity<List<StockInward>> getAllStockInward() {
         return ResponseEntity.ok(stockInwardService.getAllStockInward());
     }
 
     // ✅ GET BY ID
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('STOCK_INWARD_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('STOCK_INWARD_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS')")
     public ResponseEntity<StockInward> getStockInward(@PathVariable Long id) {
         return ResponseEntity.ok(stockInwardService.getStockInwardById(id));
     }

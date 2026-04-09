@@ -28,7 +28,7 @@ public class SectionQuestionController {
     // ================= ADD QUESTION TO SECTION =================
     // POST /api/sections/{sectionId}/questions/{questionId}
     @PostMapping("/{questionId}")
-    @PreAuthorize("hasAnyAuthority('SECTION_MANAGE', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @PreAuthorize("hasAnyAuthority('SECTION_MANAGE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<Void> addQuestionToSection(
             @PathVariable Long sectionId,
             @PathVariable Long questionId) {
@@ -40,7 +40,7 @@ public class SectionQuestionController {
     // ================= REMOVE QUESTION FROM SECTION =================
     // DELETE /api/sections/{sectionId}/questions/{questionId}
     @DeleteMapping("/{questionId}")
-    @PreAuthorize("hasAnyAuthority('SECTION_MANAGE', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @PreAuthorize("hasAnyAuthority('SECTION_MANAGE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<Void> removeQuestionFromSection(
             @PathVariable Long sectionId,
             @PathVariable Long questionId) {

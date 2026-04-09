@@ -15,16 +15,20 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.lms.www.management.model.ExamEvaluationLog;
 import com.lms.www.management.service.ExamEvaluationLogService;
+import com.lms.www.management.util.SecurityUtil;
 
 @RestController
 @RequestMapping("/api/exam-attempts/{attemptId}/evaluation-logs")
 public class ExamEvaluationLogController {
 
     private final ExamEvaluationLogService examEvaluationLogService;
+    private final SecurityUtil securityUtil;
 
     public ExamEvaluationLogController(
-            ExamEvaluationLogService examEvaluationLogService) {
+            ExamEvaluationLogService examEvaluationLogService,
+            SecurityUtil securityUtil) {
         this.examEvaluationLogService = examEvaluationLogService;
+        this.securityUtil = securityUtil;
     }
 
     // ================= CREATE EVALUATION LOG =================
@@ -106,10 +110,9 @@ public class ExamEvaluationLogController {
         );
     }
 
-    // ================= TEMP ID EXTRACTION =================
+    // ================= ID EXTRACTION =================
     private Long extractEvaluatorId(Authentication authentication) {
-        // TEMP until JWT → evaluator mapping
-        return 99L; // admin / instructor placeholder
+        return securityUtil.getInstructorId();
     }
 
     private void extractViewer(Authentication authentication) {

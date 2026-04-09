@@ -41,7 +41,7 @@ public class QuestionController {
 
     // ================= CREATE QUESTION (JSON) =================
     @PostMapping(consumes = "application/json", produces = "application/json")
-    @PreAuthorize("hasAnyAuthority('QUESTION_BANK_MANAGE', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @PreAuthorize("hasAnyAuthority('QUESTION_BANK_MANAGE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<Question> createQuestionJson(
             @RequestBody Map<String, Object> request) {
 
@@ -99,7 +99,7 @@ public class QuestionController {
 
     // ================= CREATE QUESTION (MULTIPART) =================
     @PostMapping(consumes = "multipart/form-data", produces = "application/json")
-    @PreAuthorize("hasAnyAuthority('QUESTION_BANK_MANAGE', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @PreAuthorize("hasAnyAuthority('QUESTION_BANK_MANAGE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<Question> createQuestionMultipart(
 
             @RequestParam(required = false) String questionText,
@@ -129,7 +129,7 @@ public class QuestionController {
 
     // ================= GET ALL QUESTIONS =================
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('QUESTION_BANK_VIEW', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @PreAuthorize("hasAnyAuthority('QUESTION_BANK_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<List<Question>> getAllQuestions() {
         return ResponseEntity.ok(
                 questionRepository.findAll()
@@ -138,7 +138,7 @@ public class QuestionController {
 
     // ================= GET QUESTION BY ID =================
     @GetMapping("/{questionId}")
-    @PreAuthorize("hasAnyAuthority('QUESTION_BANK_VIEW', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @PreAuthorize("hasAnyAuthority('QUESTION_BANK_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<Question> getQuestion(
             @PathVariable Long questionId) {
 
@@ -151,7 +151,7 @@ public class QuestionController {
 
     // ================= DELETE QUESTION =================
     @DeleteMapping("/{questionId}")
-    @PreAuthorize("hasAnyAuthority('QUESTION_BANK_MANAGE', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @PreAuthorize("hasAnyAuthority('QUESTION_BANK_MANAGE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<Void> deleteQuestion(
             @PathVariable Long questionId) {
 
@@ -161,7 +161,7 @@ public class QuestionController {
 
     // ================= GET DESCRIPTIVE DETAILS =================
     @GetMapping("/{questionId}/descriptive-details")
-    @PreAuthorize("hasAnyAuthority('QUESTION_BANK_VIEW', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @PreAuthorize("hasAnyAuthority('QUESTION_BANK_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<?> getDescriptiveDetails(
             @PathVariable Long questionId) {
 

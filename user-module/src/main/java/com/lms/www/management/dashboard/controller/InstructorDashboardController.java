@@ -3,10 +3,13 @@ package com.lms.www.management.dashboard.controller;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 import com.lms.www.security.SecurityUtil;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,6 +40,7 @@ import com.lms.www.management.dashboard.service.InstructorWebinarService;
 import com.lms.www.management.model.AttendanceRecord;
 import com.lms.www.management.model.Certificate;
 import com.lms.www.management.model.Exam;
+import com.lms.www.management.model.ExamAttempt;
 import com.lms.www.management.model.Session;
 import com.lms.www.management.model.Webinar;
 
@@ -59,19 +63,30 @@ public class InstructorDashboardController {
  // ==========================================
  // 1. BATCHES
  // ==========================================
- @GetMapping("/batches")
- @PreAuthorize("hasAuthority('BATCH_VIEW') or hasAuthority('ALL_PERMISSIONS')")
- public ResponseEntity<List<InstructorBatchDTO>> getAssignedBatches(
-         @RequestParam(defaultValue = "0") int page,
-         @RequestParam(defaultValue = "10") int size) {
-
-     Long instructorId = securityUtil.getInstructorId();
-
-     Page<InstructorBatchDTO> batchPage =
-             batchService.getAssignedBatches(instructorId, PageRequest.of(page, size));
-
-     return ResponseEntity.ok(batchPage.getContent());
- }
+    @GetMapping("/batches")
+    @PreAuthorize("hasAuthority('BATCH_VIEW') or hasAuthority('ALL_PERMISSIONS')")
+    public ResponseEntity<?> getAssignedBatches(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            Long instructorId = securityUtil.getInstructorId();
+            if (instructorId == null) {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Unable to resolve instructor identity. Please log in again.");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(errorResponse);
+            }
+            Pageable pageable = PageRequest.of(page, size);
+            Page<InstructorBatchDTO> batchPage = batchService.getAssignedBatches(instructorId, pageable);
+            return ResponseEntity.ok(batchPage.getContent());
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Internal Error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(errorResponse);
+        }
+    }
 
  @GetMapping("/batches/{batchId}/students")
  @PreAuthorize("hasAuthority('STUDENT_BATCH_VIEW') or hasAuthority('ALL_PERMISSIONS')")
@@ -90,7 +105,7 @@ public class InstructorDashboardController {
     // ==========================================
     // 2. SESSIONS
     // ==========================================
-    @PostMapping("/batches/{batchId}/sessions")
+    @PostMapping("/sessions/batch/{batchId}")
     @PreAuthorize("hasAuthority('SESSION_CREATE') or hasAuthority('ALL_PERMISSIONS')")
     public ResponseEntity<Session> createSession(
             @PathVariable Long batchId,
@@ -117,6 +132,13 @@ public class InstructorDashboardController {
         Long instructorId = securityUtil.getInstructorId();
         sessionService.deleteSession(instructorId, sessionId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/sessions/{sessionId}")
+    @PreAuthorize("hasAuthority('SESSION_VIEW') or hasAuthority('ROLE_INSTRUCTOR') or hasAuthority('ALL_PERMISSIONS')")
+    public ResponseEntity<Session> getSessionById(@PathVariable Long sessionId) {
+        Long instructorId = securityUtil.getInstructorId();
+        return ResponseEntity.ok(sessionService.getSessionById(instructorId, sessionId));
     }
 
     @GetMapping("/sessions/batch/{batchId}")
@@ -169,14 +191,14 @@ public class InstructorDashboardController {
         return ResponseEntity.ok(examService.updateExam(securityUtil.getInstructorId(), examId, exam));
     }
 
-    @PostMapping("/exams/{examId}/publish")
+    @PutMapping("/exams/{examId}/publish")
     @PreAuthorize("hasAuthority('EXAM_PUBLISH') or hasAuthority('ALL_PERMISSIONS')")
     public ResponseEntity<Void> publishExam(@PathVariable Long examId) {
         examService.publishExam(securityUtil.getInstructorId(), examId);
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/exams/{examId}/close")
+    @PutMapping("/exams/{examId}/close")
     @PreAuthorize("hasAuthority('EXAM_CLOSE') or hasAuthority('ALL_PERMISSIONS')")
     public ResponseEntity<Void> closeExam(@PathVariable Long examId) {
         examService.closeExam(securityUtil.getInstructorId(), examId);
@@ -205,6 +227,12 @@ public class InstructorDashboardController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/exam-attempts/exam/{examId}")
+    @PreAuthorize("hasAuthority('EXAM_ATTEMPT_VIEW') or hasAuthority('ALL_PERMISSIONS')")
+    public ResponseEntity<List<ExamAttempt>> getExamAttemptsByExam(@PathVariable Long examId) {
+        return ResponseEntity.ok(examService.getExamAttempts(securityUtil.getInstructorId(), examId));
+    }
+
     // ==========================================
     // 5. WEBINARS
     // ==========================================
@@ -214,6 +242,12 @@ public class InstructorDashboardController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         return ResponseEntity.ok(webinarService.getInstructorWebinars(securityUtil.getInstructorId(), PageRequest.of(page, size)));
+    }
+
+    @GetMapping("/webinars/scheduled")
+    @PreAuthorize("hasAuthority('WEBINAR_VIEW') or hasAuthority('ALL_PERMISSIONS')")
+    public ResponseEntity<List<Webinar>> getScheduledWebinars() {
+        return ResponseEntity.ok(webinarService.getScheduledWebinars(securityUtil.getInstructorId()));
     }
 
     @PostMapping("/webinars")
@@ -228,7 +262,7 @@ public class InstructorDashboardController {
         return ResponseEntity.ok(webinarService.updateWebinar(securityUtil.getInstructorId(), webinarId, webinar));
     }
 
-    @DeleteMapping("/webinars/{webinarId}")
+    @PutMapping("/webinars/{webinarId}/cancel")
     @PreAuthorize("hasAuthority('WEBINAR_CANCEL') or hasAuthority('ALL_PERMISSIONS')")
     public ResponseEntity<Void> cancelWebinar(@PathVariable Long webinarId) {
         webinarService.cancelWebinar(securityUtil.getInstructorId(), webinarId);

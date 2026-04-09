@@ -30,6 +30,8 @@ import com.lms.www.community.repository.CommunityReportRepository;
 import com.lms.www.community.repository.CommunitySpaceRepository;
 import com.lms.www.community.repository.CommunityThreadRepository;
 import com.lms.www.community.service.CommunityService;
+import com.lms.www.repository.UserRepository;
+import com.lms.www.model.User;
 
 @Service
 public class CommunityServiceImpl implements CommunityService {
@@ -44,6 +46,7 @@ private final CommunityReportRepository reportRepo;
 private final CommunityNotificationRepository notificationRepo;
 private final CommunityMentionRepository mentionRepo;
 private final CommunityChannelMemberRepository memberRepo;
+private final UserRepository userRepo;
 
 public CommunityServiceImpl(
 CommunitySpaceRepository spaceRepo,
@@ -55,7 +58,8 @@ CommunityBookmarkRepository bookmarkRepo,
 CommunityReportRepository reportRepo,
 CommunityNotificationRepository notificationRepo,
 CommunityMentionRepository mentionRepo,
-CommunityChannelMemberRepository memberRepo
+CommunityChannelMemberRepository memberRepo,
+UserRepository userRepo
 ){
 this.spaceRepo = spaceRepo;
 this.channelRepo = channelRepo;
@@ -67,6 +71,7 @@ this.reportRepo = reportRepo;
 this.notificationRepo = notificationRepo;
 this.mentionRepo = mentionRepo;
 this.memberRepo = memberRepo;
+this.userRepo = userRepo;
 }
 
 //////////////////////////////////////////////////////
@@ -670,5 +675,45 @@ public void removeLeadFromMarketingChannel(Long userId) {
                             .build()
             );
         }
+    }
+
+    @Override
+    public List<java.util.Map<String, Object>> getSpaceMembers(Long spaceId) {
+        // 1. Get all channels in the space
+        List<CommunityChannel> channels = channelRepo.findBySpaceId(spaceId);
+        if (channels.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 2. Get all members of these channels
+        List<Long> channelIds = channels.stream()
+                .map(CommunityChannel::getChannelId)
+                .toList();
+        
+        List<CommunityChannelMember> memberships = memberRepo.findByChannelIdIn(channelIds);
+        
+        // 3. Get unique user IDs
+        List<Long> userIds = memberships.stream()
+                .map(CommunityChannelMember::getUserId)
+                .distinct()
+                .toList();
+
+        if (userIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 4. Fetch user details
+        List<User> users = userRepo.findAllById(userIds);
+
+        // 5. Build response
+        return users.stream().map(user -> {
+            java.util.Map<String, Object> map = new java.util.HashMap<>();
+            map.put("userId", user.getUserId());
+            map.put("firstName", user.getFirstName());
+            map.put("lastName", user.getLastName());
+            map.put("email", user.getEmail());
+            map.put("role", user.getRoleName());
+            return map;
+        }).toList();
     }
 }

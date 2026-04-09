@@ -48,12 +48,11 @@ import com.lms.www.repository.UserRepository;
 import com.lms.www.model.User;
 import org.springframework.beans.factory.annotation.Qualifier;
 import jakarta.servlet.http.HttpServletRequest;
+import com.lms.www.fee.allocation.repository.StudentFeeAllocationRepository;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class AffiliateServiceImpl implements AffiliateService {
 
@@ -68,9 +67,37 @@ public class AffiliateServiceImpl implements AffiliateService {
     private final UserContext userContext;
     private final UserRepository userRepository;
     private final HttpServletRequest httpServletRequest;
-
-    @Qualifier("mainAuditLogService")
     private final AuditLogService genericAuditLogService;
+    private final StudentFeeAllocationRepository allocationRepository;
+
+    public AffiliateServiceImpl(
+            AffiliateRepository affiliateRepository,
+            AffiliateLinkRepository linkRepository,
+            AffiliateClickRepository clickRepository,
+            AffiliateSaleRepository saleRepository,
+            AffiliateWalletRepository walletRepository,
+            AffiliateLeadRepository leadRepository,
+            WalletConfigRepository walletConfigRepository,
+            WalletService walletService,
+            UserContext userContext,
+            UserRepository userRepository,
+            HttpServletRequest httpServletRequest,
+            @Qualifier("coreAuditLogService") AuditLogService genericAuditLogService,
+            StudentFeeAllocationRepository allocationRepository) {
+        this.affiliateRepository = affiliateRepository;
+        this.linkRepository = linkRepository;
+        this.clickRepository = clickRepository;
+        this.saleRepository = saleRepository;
+        this.walletRepository = walletRepository;
+        this.leadRepository = leadRepository;
+        this.walletConfigRepository = walletConfigRepository;
+        this.walletService = walletService;
+        this.userContext = userContext;
+        this.userRepository = userRepository;
+        this.httpServletRequest = httpServletRequest;
+        this.genericAuditLogService = genericAuditLogService;
+        this.allocationRepository = allocationRepository;
+    }
 
     private static final BigDecimal DEFAULT_STUDENT_COMMISSION = new BigDecimal("10.0");
     private static final BigDecimal DEFAULT_AFFILIATE_COMMISSION = new BigDecimal("15.0");
@@ -375,7 +402,8 @@ public class AffiliateServiceImpl implements AffiliateService {
 
     private void validatePurchase(Affiliate affiliate, Long courseId) {
         if (affiliate.getType() == AffiliateType.STUDENT && courseId != null) {
-            boolean purchased = saleRepository.existsByStudentIdAndCourseId(affiliate.getUserId(), courseId);
+            boolean purchased = allocationRepository.findByUserId(affiliate.getUserId()).stream()
+                    .anyMatch(a -> a.getCourseId().equals(courseId));
             if (!purchased) {
                 throw new IllegalStateException("Cannot generate referral for unpurchased course");
             }
@@ -456,7 +484,7 @@ public class AffiliateServiceImpl implements AffiliateService {
         List<AffiliateLink> links = linkRepository.findByAffiliate(affiliate);
 
         return links.stream().map(link -> {
-            Long clicks = clickRepository.countByBatchIdAndAffiliateCode(link.getBatchId(), link.getReferralCode());
+            Long clicks = clickRepository.countByAffiliateCode(link.getReferralCode());
             Long leads = leadRepository.countByLinkId(link.getId());
             Long conversions = leadRepository.countByLinkIdAndStatus(link.getId(), AffiliateLead.LeadStatus.ENROLLED);
             BigDecimal earnings = saleRepository.sumCommissionByAffiliateIdAndBatchIdAndStatuses(
@@ -687,8 +715,21 @@ public class AffiliateServiceImpl implements AffiliateService {
         Affiliate affiliate = affiliateRepository.findByUserId(userId).orElse(null);
 
         if (affiliate == null) {
-            log.error("[AffiliateService] Dashboard error: No affiliate profile found for userId: {}", userId);
-            throw new RuntimeException("Affiliate profile not found for user: " + userId);
+            log.warn("[AffiliateService] No affiliate profile found for userId: {}", userId);
+            // Return a safe empty state rather than crashing
+            return AffiliateDashboardResponse.builder()
+                    .referralCode("NOT_REGISTERED")
+                    .totalReferrals(0L)
+                    .totalClicks(0L)
+                    .purchases(0L)
+                    .totalEarnings(BigDecimal.ZERO)
+                    .totalRevenue(BigDecimal.ZERO)
+                    .walletBalance(BigDecimal.ZERO)
+                    .name("Guest")
+                    .status("UNREGISTERED")
+                    .recentActivity(new java.util.ArrayList<>())
+                    .activeLinks(new java.util.ArrayList<>())
+                    .build();
         }
 
         log.info("--- Dashboard Debug ---");
@@ -745,7 +786,7 @@ public class AffiliateServiceImpl implements AffiliateService {
                 .email(affiliate.getEmail())
                 .status(affiliate.getStatus() != null ? affiliate.getStatus().name() : "ACTIVE")
                 .recentActivity(recentActivity)
-                .activeLinks(getAffiliateLinks(affiliate.getId()))
+                .activeLinks(getAffiliateLinksByAffiliateId(affiliate.getId()))
                 .bankName(affiliate.getBankName())
                 .accountNumber(affiliate.getAccountNumber())
                 .ifscCode(affiliate.getIfscCode())
@@ -810,7 +851,23 @@ public class AffiliateServiceImpl implements AffiliateService {
     @Override
     @Transactional
     public Affiliate registerStudentAsAffiliateSecure(RegisterAffiliateRequest request) {
-        request.setUserId(userContext.getCurrentUserId());
+        Long userId = userContext.getCurrentUserId();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        if (request.getName() == null || request.getName().isBlank()) {
+            String fullName = (user.getFirstName() != null ? user.getFirstName() : "")
+                    + (user.getLastName() != null ? " " + user.getLastName() : "");
+            request.setName(fullName.isBlank() ? "Student " + userId : fullName.trim());
+        }
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            request.setEmail(user.getEmail());
+        }
+        if (request.getMobile() == null || request.getMobile().isBlank()) {
+            request.setMobile(user.getPhone() != null ? user.getPhone() : "0000000000");
+        }
+
+        request.setUserId(userId);
         return registerStudentAsAffiliate(request);
     }
 
@@ -818,15 +875,15 @@ public class AffiliateServiceImpl implements AffiliateService {
         return AffiliateDTO.builder()
                 .id(a.getId())
                 .userId(a.getUserId())
-                .type(a.getType().name())
+                .type(a.getType() != null ? a.getType().name() : "AFFILIATE")
                 .code(a.getReferralCode())
                 .referralCode(a.getReferralCode())
                 .name(a.getName())
                 .username(a.getUsername())
                 .email(a.getEmail())
                 .mobile(a.getMobile())
-                .status(a.getStatus().name())
-                .commissionType(a.getCommissionType().name())
+                .status(a.getStatus() != null ? a.getStatus().name() : "ACTIVE")
+                .commissionType(a.getCommissionType() != null ? a.getCommissionType().name() : "PERCENTAGE")
                 .commissionValue(a.getCommissionValue())
                 .studentDiscountValue(a.getStudentDiscountValue())
                 .createdAt(a.getCreatedAt())

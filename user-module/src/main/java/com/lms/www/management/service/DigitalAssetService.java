@@ -12,7 +12,7 @@ public interface DigitalAssetService {
 
     DigitalAsset getAssetById(Long id);
 
-    DigitalAsset assignLicense(Long id, Long userId);
+    DigitalAsset assignLicense(Long id, String userId);
 
     DigitalAsset releaseLicense(Long id);
 

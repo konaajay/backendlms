@@ -40,9 +40,9 @@ public class StockInward {
     @JoinColumn(name = "vendor_id")
     private Vendor vendor;
 
-    @ManyToOne
-    @JoinColumn(name = "item_id")
-    private Item item;
+    @JsonProperty("itemId")
+    @Column(name = "item_id", length = 255)
+    private String itemId;
 
     @JsonProperty("quantity")
     @Column(name = "quantity_received")
@@ -62,7 +62,7 @@ public class StockInward {
     private String invoiceFile;
 
     @Column(name = "received_by")
-    private Long receivedBy;
+    private String receivedBy;
 
     @JsonProperty("date")
     @Column(name = "received_date")
@@ -78,7 +78,8 @@ public class StockInward {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
-        if (this.status == null) this.status = "RECEIVED";
+        if (this.status == null)
+            this.status = "RECEIVED";
     }
 
     // Helper Setters for Frontend IDs
@@ -90,9 +91,7 @@ public class StockInward {
     }
 
     @JsonProperty("itemId")
-    public void setItemId(Long itemId) {
-        if (itemId != null) {
-            this.item = Item.builder().id(itemId).build();
-        }
+    public void setItemId(String itemId) {
+        this.itemId = itemId;
     }
 }

@@ -18,4 +18,5 @@ public class InstallmentPaymentResponse {
     private String studentName;
     private String status;
     private String label;
+    private Integer installmentNumber;
 }

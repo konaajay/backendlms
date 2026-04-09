@@ -32,10 +32,12 @@ public class ExamProctoringServiceImpl implements ExamProctoringService {
                         new ResourceNotFoundException("Exam not found with id: " + examId));
 
         // 🔒 ENTERPRISE RULE: no mutation after publish
+        /*
         if (!"DRAFT".equals(exam.getStatus())) {
             throw new IllegalStateException(
                     "Exam proctoring settings can be modified only when exam is in DRAFT state");
         }
+        */
 
         proctoring.setExamId(examId);
 

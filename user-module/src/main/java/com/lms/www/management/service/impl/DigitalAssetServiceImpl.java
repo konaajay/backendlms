@@ -54,7 +54,7 @@ public class DigitalAssetServiceImpl implements DigitalAssetService {
     }
 
     @Override
-    public DigitalAsset assignLicense(Long id, Long userId) {
+    public DigitalAsset assignLicense(Long id, String userId) {
 
         DigitalAsset asset = getAssetById(id);
 
@@ -67,6 +67,7 @@ public class DigitalAssetServiceImpl implements DigitalAssetService {
 
         used += 1;
         asset.setUsedLicenses(used);
+        asset.setAssignedTo(userId);
         asset.setUpdatedAt(LocalDateTime.now());
 
         return assetRepository.save(asset);

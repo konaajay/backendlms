@@ -23,7 +23,7 @@ public class StudentBatchTransferController {
 
     // ================= TRANSFER =================
     @PostMapping("/transfer")
-    @PreAuthorize("hasAuthority('STUDENT_BATCH_TRANSFER_CREATE')")
+    @PreAuthorize("hasAuthority('STUDENT_BATCH_TRANSFER_CREATE') or hasAuthority('ALL_PERMISSIONS')")
     public ResponseEntity<StudentBatchTransfer> transferStudent(
             @RequestParam Long studentId,
             @RequestParam Long courseId,
@@ -49,7 +49,7 @@ public class StudentBatchTransferController {
 
     // ================= VIEW BY STUDENT =================
     @GetMapping("/student/{studentId}")
-    @PreAuthorize("hasAuthority('STUDENT_BATCH_TRANSFER_VIEW')")
+    @PreAuthorize("hasAuthority('STUDENT_BATCH_TRANSFER_VIEW') or hasAuthority('ALL_PERMISSIONS')")
     public ResponseEntity<List<StudentBatchTransfer>> getTransfersByStudent(
             @PathVariable Long studentId) {
 
@@ -60,7 +60,7 @@ public class StudentBatchTransferController {
 
     // ================= VIEW BY COURSE =================
     @GetMapping("/course/{courseId}")
-    @PreAuthorize("hasAuthority('STUDENT_BATCH_TRANSFER_VIEW')")
+    @PreAuthorize("hasAuthority('STUDENT_BATCH_TRANSFER_VIEW') or hasAuthority('ALL_PERMISSIONS')")
     public ResponseEntity<List<StudentBatchTransfer>> getTransfersByCourse(
             @PathVariable Long courseId) {
 

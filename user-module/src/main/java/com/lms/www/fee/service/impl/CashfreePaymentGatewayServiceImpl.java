@@ -88,7 +88,11 @@ public class CashfreePaymentGatewayServiceImpl implements PaymentGatewayService 
                     new ParameterizedTypeReference<Map<String, Object>>() {
                     });
             Map<String, Object> body = response.getBody();
-
+            System.out.println("--------------------------------------------------");
+            System.out.println("💰 CASHFREE API RESPONSE BODY");
+            System.out.println(body);
+            System.out.println("--------------------------------------------------");
+            
             if (body != null && body.containsKey("payment_session_id")) {
                 return (String) body.get("payment_session_id");
             } else {

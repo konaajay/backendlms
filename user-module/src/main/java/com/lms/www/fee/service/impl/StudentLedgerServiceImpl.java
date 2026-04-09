@@ -35,7 +35,7 @@ public class StudentLedgerServiceImpl implements StudentLedgerService {
 
     @Override
     public StudentLedgerResponse getLedger(Long studentId) {
-        StudentFeeAllocation allocation = allocationService.getFeeAllocationById(studentId);
+        StudentFeeAllocation allocation = allocationService.getFeeAllocationByUserId(studentId);
         
         List<StudentInstallmentPlan> installments = installmentRepo.findByStudentFeeAllocationId(allocation.getId());
         List<StudentFeePaymentResponse> payments = paymentRepo.findByStudentId(studentId).stream()
@@ -47,6 +47,8 @@ public class StudentLedgerServiceImpl implements StudentLedgerService {
                         .allocationId(allocation.getId())
                         .studentName(allocation.getStudentName())
                         .feeStructureId(allocation.getFeeStructureId())
+                        .courseId(allocation.getCourseId())
+                        .batchId(allocation.getBatchId())
                         .feeStructureName(allocation.getCourseName())
                         .feeTypeName(allocation.getBatchName())
                         .build())
@@ -68,7 +70,7 @@ public class StudentLedgerServiceImpl implements StudentLedgerService {
 
     @Override
     public StudentFeeDashboardResponse getDashboard(Long studentId) {
-        StudentFeeAllocation allocation = allocationService.getFeeAllocationById(studentId);
+        StudentFeeAllocation allocation = allocationService.getFeeAllocationByUserId(studentId);
         
         List<StudentInstallmentPlan> installments = installmentRepo.findByStudentFeeAllocationId(allocation.getId());
         

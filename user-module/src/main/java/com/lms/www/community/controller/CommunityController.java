@@ -44,6 +44,11 @@ public List<CommunitySpace> searchSpaces(@RequestParam String search){
     return communityService.searchSpaces(search);
 }
 
+@GetMapping("/spaces/{spaceId}/members")
+public List<java.util.Map<String, Object>> getSpaceMembers(@PathVariable Long spaceId){
+    return communityService.getSpaceMembers(spaceId);
+}
+
 //////////////////////////////////////////////////////
 // CHANNELS
 //////////////////////////////////////////////////////

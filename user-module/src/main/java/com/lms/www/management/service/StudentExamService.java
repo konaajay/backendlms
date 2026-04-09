@@ -26,4 +26,6 @@ public interface StudentExamService {
     StudentExamAttemptResultDTO submitExamAttempt(Long examId, Long studentId);
 
     List<StudentExamAttemptResultDTO> getStudentExamAttempts(Long studentId);
+
+    StudentExamAttemptResultDTO getSpecificAttemptResult(Long examId, Long attemptId, Long studentId);
 }

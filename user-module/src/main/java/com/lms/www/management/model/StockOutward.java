@@ -25,16 +25,14 @@ public class StockOutward {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "item_id", insertable = false, updatable = false)
-    private Item item;
+
 
     @JsonProperty("itemId")
-    @Column(name = "item_id", nullable = false)
-    private Long itemId;
+    @Column(name = "item_id", nullable = false, length = 255)
+    private String itemId;
 
     @Column(name = "issued_to_id")
-    private Long issuedToId;
+    private String issuedToId;
 
     @JsonProperty("issuedTo")
     @Column(name = "recipient_type")
@@ -50,7 +48,7 @@ public class StockOutward {
     private Integer returnedQuantity;
 
     @Column(name = "issued_by")
-    private Long issuedBy; // Renamed from requestedBy mapping
+    private String issuedBy; // Renamed from requestedBy mapping
 
     @JsonProperty("linkedReference")
     @Column(name = "reference")

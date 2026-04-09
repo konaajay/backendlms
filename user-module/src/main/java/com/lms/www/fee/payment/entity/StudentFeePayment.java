@@ -32,9 +32,6 @@ public class StudentFeePayment {
     @JsonProperty("paymentId")
     private Long id;
 
-    @Version
-    private Long version;
-
     @JsonProperty("allocationId")
     @Column(name = "student_fee_allocation_id", nullable = false)
     private Long studentFeeAllocationId;
@@ -98,11 +95,7 @@ public class StudentFeePayment {
     private BigDecimal overdueRemaining;
 
     @ManyToMany
-    @JoinTable(
-        name = "payment_installment_mapping",
-        joinColumns = @JoinColumn(name = "payment_id"),
-        inverseJoinColumns = @JoinColumn(name = "installment_id")
-    )
+    @JoinTable(name = "payment_installment_mapping", joinColumns = @JoinColumn(name = "payment_id"), inverseJoinColumns = @JoinColumn(name = "installment_id"))
     @Builder.Default
     private List<StudentInstallmentPlan> installments = new ArrayList<>();
 
@@ -132,23 +125,24 @@ public class StudentFeePayment {
     @Column(name = "gateway_payment_time")
     private LocalDateTime gatewayPaymentTime;
 
-/*
-    @Column(name = "is_early_payment", nullable = false)
-    @Builder.Default
-    private boolean earlyPayment = false;
-*/
+    /*
+     * @Column(name = "is_early_payment", nullable = false)
+     * 
+     * @Builder.Default
+     * private boolean earlyPayment = false;
+     */
 
-/*
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-*/
-
-
+    /*
+     * @CreatedDate
+     * 
+     * @Column(name = "created_at", nullable = false, updatable = false)
+     * private LocalDateTime createdAt;
+     * 
+     * @LastModifiedDate
+     * 
+     * @Column(name = "updated_at", nullable = false)
+     * private LocalDateTime updatedAt;
+     */
 
     @PrePersist
     protected void onPrePersist() {

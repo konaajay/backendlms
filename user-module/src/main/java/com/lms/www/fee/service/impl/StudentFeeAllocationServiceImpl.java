@@ -36,6 +36,7 @@ import com.lms.www.management.model.StudentBatch;
 import com.lms.www.fee.installment.entity.StudentInstallmentPlan;
 import com.lms.www.fee.config.FeeModuleConfig;
 import com.lms.www.fee.config.FeeConstants;
+import com.lms.www.marketing.service.CouponService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +62,7 @@ public class StudentFeeAllocationServiceImpl implements StudentFeeAllocationServ
     private final StudentBatchService studentBatchService;
     private final com.lms.www.fee.installment.repository.StudentInstallmentPlanRepository installmentRepo;
     private final com.lms.www.fee.payment.repository.StudentFeePaymentRepository paymentRepo;
+    private final CouponService couponService;
 
     @Override
     public StudentFeeAllocationResponse create(CreateAllocationRequest request) {
@@ -120,6 +122,15 @@ public class StudentFeeAllocationServiceImpl implements StudentFeeAllocationServ
         
         // 🔹 Record Affiliate Sale if applicable
         recordAffiliateSale(allocation, user, structure);
+        
+        // 🔹 Officially apply the coupon if present so usage count increments
+        if (request.getAppliedPromoCode() != null && !request.getAppliedPromoCode().isBlank()) {
+            try {
+                couponService.applyCoupon(request.getAppliedPromoCode(), structure.getCourseId(), structure.getTotalAmount().doubleValue(), userId);
+            } catch (Exception e) {
+                log.warn("Coupon apply failed during allocation: {}", e.getMessage());
+            }
+        }
 
         List<StudentInstallmentPlan> installments = installmentService.generateInstallmentsFromStructure(saved);
         
@@ -215,27 +226,50 @@ public class StudentFeeAllocationServiceImpl implements StudentFeeAllocationServ
         BigDecimal oneTimeBase = BigDecimal.ZERO;
         BigDecimal installmentBase = BigDecimal.ZERO;
 
-        for (var c : structure.getComponents()) {
-            if (c.getAmount() != null) {
-                if (Boolean.FALSE.equals(c.getInstallmentAllowed())) {
+        // 🎯 CRITICAL FIX: Ensure EXCLUSIVE installment base vs One-Time components
+        if (structure.getTotalAmount() != null && structure.getTotalAmount().compareTo(BigDecimal.ZERO) > 0) {
+            // Case 1: Batch Fee is defined. It becomes the ONLY amount to be divided into installments.
+            installmentBase = structure.getTotalAmount();
+            
+            // Loop through components to find EXTRA one-time fees (Like Exam Fee, Library Fee, Transport)
+            for (var c : structure.getComponents()) {
+                if (c.getAmount() != null && Boolean.FALSE.equals(c.getInstallmentAllowed())) {
                     oneTimeBase = oneTimeBase.add(c.getAmount());
-                } else {
-                    installmentBase = installmentBase.add(c.getAmount());
+                }
+            }
+        } else {
+            // Case 2: No Batch Fee defined. Calculate everything from the components list.
+            for (var c : structure.getComponents()) {
+                if (c.getAmount() != null) {
+                    if (Boolean.FALSE.equals(c.getInstallmentAllowed())) {
+                        oneTimeBase = oneTimeBase.add(c.getAmount());
+                    } else {
+                        installmentBase = installmentBase.add(c.getAmount());
+                    }
                 }
             }
         }
 
-        // Add Admission Fee to the subtotal if it exists in the structure
+        // Admission Fee handling (Always one-time)
         BigDecimal admFee = structure.getAdmissionFeeAmount() != null ? structure.getAdmissionFeeAmount() : BigDecimal.ZERO;
         allocation.setAdmissionFeeAmount(admFee);
         
-        // If "Include in Base" is implicit or handled as a component, we follow structure's lead.
-        // Usually, the dedicated field is separate from components. We'll add it to oneTimeBase.
-        oneTimeBase = oneTimeBase.add(admFee);
-
-        BigDecimal totalDiscount = allocation.getAdminDiscount().add(allocation.getAdditionalDiscount())
-                .add(allocation.getPromoDiscount()).add(allocation.getAffiliateDiscount());
+        // Add admission fee to one-time base if not already present in components
+        boolean admInComponents = structure.getComponents().stream()
+                .anyMatch(c -> c.getName() != null && c.getName().toLowerCase().contains("admission"));
         
+        if (!admInComponents) {
+            oneTimeBase = oneTimeBase.add(admFee);
+        }
+
+        BigDecimal adminDisc = allocation.getAdminDiscount() != null ? allocation.getAdminDiscount() : BigDecimal.ZERO;
+        BigDecimal addlDisc = allocation.getAdditionalDiscount() != null ? allocation.getAdditionalDiscount() : BigDecimal.ZERO;
+        BigDecimal promoDisc = allocation.getPromoDiscount() != null ? allocation.getPromoDiscount() : BigDecimal.ZERO;
+        BigDecimal affilDisc = allocation.getAffiliateDiscount() != null ? allocation.getAffiliateDiscount() : BigDecimal.ZERO;
+
+        BigDecimal totalDiscount = adminDisc.add(addlDisc).add(promoDisc).add(affilDisc);
+        
+        // Discount should apply to installmentBase
         if (totalDiscount.compareTo(installmentBase) > 0) totalDiscount = installmentBase;
         allocation.setTotalDiscount(totalDiscount);
 
@@ -366,6 +400,16 @@ public class StudentFeeAllocationServiceImpl implements StudentFeeAllocationServ
         if (request.getAdminDiscount() != null) existing.setAdminDiscount(request.getAdminDiscount());
         if (request.getAdditionalDiscount() != null) existing.setAdditionalDiscount(request.getAdditionalDiscount());
         if (request.getPromoDiscount() != null) existing.setPromoDiscount(request.getPromoDiscount());
+        if (request.getAppliedPromoCode() != null) {
+            if (!request.getAppliedPromoCode().equals(existing.getAppliedPromoCode()) && !request.getAppliedPromoCode().isBlank()) {
+                try {
+                    couponService.applyCoupon(request.getAppliedPromoCode(), structure.getCourseId(), structure.getTotalAmount().doubleValue(), existing.getUserId());
+                } catch (Exception e) {
+                    log.warn("Coupon apply failed during allocation update: {}", e.getMessage());
+                }
+            }
+            existing.setAppliedPromoCode(request.getAppliedPromoCode());
+        }
         if (request.getInstallmentCount() != null) existing.setInstallmentCount(request.getInstallmentCount());
         
         recalculateTotals(existing, structure);
@@ -433,6 +477,13 @@ public class StudentFeeAllocationServiceImpl implements StudentFeeAllocationServ
     }
 
     @Override
+    public StudentFeeAllocation getFeeAllocationByUserId(Long userId) {
+        return allocationRepo.findByUserId(userId).stream()
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("No fee allocation found for user: " + userId));
+    }
+
+    @Override
     public StudentLedgerResponse getStudentLedger(Long userId) {
         StudentFeeAllocation allocation = allocationRepo.findByUserId(userId).stream()
                 .findFirst()
@@ -450,7 +501,7 @@ public class StudentFeeAllocationServiceImpl implements StudentFeeAllocationServ
                 .allocationSummary(StudentLedgerResponse.AllocationSummary.builder()
                         .allocationId(allocation.getId())
                         .feeStructureId(allocation.getFeeStructureId())
-                        .feeStructureName(allocation.getBatchName() + " Structure")
+                        .feeStructureName((allocation.getBatchName() != null && !allocation.getBatchName().isEmpty() ? allocation.getBatchName() : allocation.getCourseName()) + " Structure")
                         .studentName(allocation.getStudentName())
                         .build())
                 .totalDue(allocation.getPayableAmount())

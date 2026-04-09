@@ -3,6 +3,7 @@ package com.lms.www.management.dashboard.service.impl;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.lms.www.management.dashboard.dto.AttendanceSummaryDTO;
 import com.lms.www.management.dashboard.dto.BatchSummaryDTO;
@@ -30,6 +31,7 @@ public class StudentDashboardServiceImpl implements StudentDashboardService {
         private final StudentBatchRepository studentBatchRepository;
 
         @Override
+        @Transactional(readOnly = true)
         public StudentDashboardDTO getStudentDashboard(Long studentId) {
 
                 // Courses & progress
@@ -51,22 +53,23 @@ public class StudentDashboardServiceImpl implements StudentDashboardService {
                 List<WebinarSummaryDTO> webinars = dashboardMetricsService.getWebinarsForStudent(studentId);
 
                 // Student Info (basic placeholder – can be replaced with UserService later)
-                StudentInfoDTO studentInfo = studentBatchRepository
-                                .findByStudentId(studentId)
-                                .stream()
-                                .findFirst()
-                                .map(sb -> StudentInfoDTO.builder()
-                                                .studentId(sb.getStudentId())
-                                                .studentName(sb.getStudentName())
-                                                .email(sb.getStudentEmail())
-                                                .status(sb.getStatus())
-                                                .build())
-                                .orElseGet(() -> StudentInfoDTO.builder()
-                                                .studentId(studentId)
-                                                .studentName("Student " + studentId)
-                                                .email("student" + studentId + "@example.com")
-                                                .status("ACTIVE")
-                                                .build());
+                StudentInfoDTO studentInfo = java.util.stream.Stream.concat(
+                                studentBatchRepository.findByStudentId(studentId).stream(),
+                                studentBatchRepository.findByUserId(studentId).stream()
+                        )
+                        .findFirst()
+                        .map(sb -> StudentInfoDTO.builder()
+                                        .studentId(sb.getStudentId())
+                                        .studentName(sb.getStudentName())
+                                        .email(sb.getStudentEmail())
+                                        .status(sb.getStatus())
+                                        .build())
+                        .orElseGet(() -> StudentInfoDTO.builder()
+                                        .studentId(studentId)
+                                        .studentName("Student " + studentId)
+                                        .email("student" + studentId + "@example.com")
+                                        .status("ACTIVE")
+                                        .build());
 
                 // Progress summary calculation
                 int totalCourses = courses.size();

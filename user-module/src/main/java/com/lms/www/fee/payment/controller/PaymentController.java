@@ -52,7 +52,7 @@ public class PaymentController {
     }
 
     @GetMapping("/{id}/receipt")
-    @PreAuthorize("hasAuthority('PAYMENT_RECEIPT_VIEW') or hasAuthority('ROLE_PARENT')")
+    @PreAuthorize("hasAuthority('PAYMENT_RECEIPT_VIEW') or hasAuthority('ROLE_PARENT') or hasAuthority('ROLE_STUDENT')")
     public ResponseEntity<byte[]> getReceipt(@PathVariable Long id) {
         byte[] pdf = paymentService.getReceiptSecure(id);
         return ResponseEntity.ok()

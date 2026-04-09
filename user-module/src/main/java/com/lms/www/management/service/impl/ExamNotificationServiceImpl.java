@@ -32,10 +32,12 @@ public class ExamNotificationServiceImpl implements ExamNotificationService {
                         new IllegalStateException("Exam not found"));
 
         // 🔒 Only editable in DRAFT
+        /*
         if (!"DRAFT".equals(exam.getStatus())) {
             throw new IllegalStateException(
                     "Exam notification can be set only in DRAFT");
         }
+        */
 
         notification.setExamId(examId);
 

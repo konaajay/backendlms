@@ -32,7 +32,7 @@ public class ExamResponseController {
 
         // ================= SAVE / AUTOSAVE RESPONSE =================
         @PostMapping
-        @PreAuthorize("hasAnyAuthority('EXAM_VIEW', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+        @PreAuthorize("hasAnyAuthority('EXAM_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR', 'ROLE_STUDENT')")
         public ResponseEntity<ExamResponse> saveResponse(
                         @PathVariable Long attemptId,
                         @RequestBody ExamResponse request,
@@ -52,7 +52,7 @@ public class ExamResponseController {
 
         // ================= GET RESPONSES =================
         @GetMapping
-        @PreAuthorize("hasAnyAuthority('EXAM_ATTEMPT_VIEW', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+        @PreAuthorize("hasAnyAuthority('EXAM_ATTEMPT_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR', 'ROLE_STUDENT')")
         public ResponseEntity<List<ExamResponse>> getResponses(
                         @PathVariable Long attemptId,
                         Authentication authentication) {
@@ -65,7 +65,7 @@ public class ExamResponseController {
 
         // ================= AUTO EVALUATE MCQ =================
         @PostMapping("/auto-evaluate")
-        @PreAuthorize("hasAnyAuthority('EXAM_RESPONSE_EVALUATE', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+        @PreAuthorize("hasAnyAuthority('EXAM_RESPONSE_EVALUATE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
         public ResponseEntity<?> autoEvaluateMcq(
                         @PathVariable Long attemptId) {
 
@@ -77,7 +77,7 @@ public class ExamResponseController {
 
         // ================= MANUAL EVALUATION =================
         @PostMapping("/{responseId}/evaluate")
-        @PreAuthorize("hasAnyAuthority('EXAM_RESPONSE_EVALUATE', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+        @PreAuthorize("hasAnyAuthority('EXAM_RESPONSE_EVALUATE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
         public ResponseEntity<ExamResponse> evaluateResponse(
                         @PathVariable Long attemptId,
                         @PathVariable Long responseId,
@@ -95,7 +95,7 @@ public class ExamResponseController {
 
         // ================= CODING RESPONSES =================
         @GetMapping("/coding-responses")
-        @PreAuthorize("hasAnyAuthority('EXAM_RESPONSE_EVALUATE', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+        @PreAuthorize("hasAnyAuthority('EXAM_RESPONSE_EVALUATE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
         public ResponseEntity<List<Map<String, Object>>> getCodingResponses(
                         @PathVariable Long attemptId) {
 

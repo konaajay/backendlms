@@ -155,7 +155,7 @@ public class EmailService {
             String body = "Hello " + studentName + ",\n\n"
                     + "Your installment payment is due.\n"
                     + "Amount: ₹" + amount + "\n"
-                    + "Due Date: " + (dueDate != null ? dueDate.format(DATE_FMT) : "—") + "\n\n"
+                    + "Due Date: " + (dueDate != null ? dueDate.format(DATE_FMT) : "Immediate (Early Payment)") + "\n\n"
                     + "Pay using the link below:\n"
                     + paymentLink + "\n\n"
                     + "Thank you,\nLMS Team";

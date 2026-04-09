@@ -76,6 +76,19 @@ public class Exam {
     @Column(name = "certificate_template_id")
     private Long certificateTemplateId;
 
+    // --- Transient fields for Dashboard ---
+    @jakarta.persistence.Transient
+    private Long questionCount;
+
+    @jakarta.persistence.Transient
+    private String courseName;
+
+    @jakarta.persistence.Transient
+    private String batchName;
+
+    @jakarta.persistence.Transient
+    private LocalDateTime endTime;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

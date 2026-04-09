@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.lms.www.management.dashboard.dto.CourseProgressDTO;
 import com.lms.www.management.dashboard.dto.DashboardCourseDataDTO;
@@ -37,9 +38,19 @@ public class DashboardCourseServiceImpl implements DashboardCourseService {
     private final TopicContentRepository topicContentRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public List<DashboardCourseDataDTO> getCoursesForStudent(Long studentId) {
 
-        List<StudentBatch> userBatches = studentBatchRepository.findByStudentId(studentId);
+        // 🔥 Try both studentId and userId to be robust
+        List<StudentBatch> batchesByStudentId = studentBatchRepository.findByStudentId(studentId);
+        List<StudentBatch> batchesByUserId = studentBatchRepository.findByUserId(studentId);
+        
+        List<StudentBatch> userBatches = new ArrayList<>(batchesByStudentId);
+        for (StudentBatch sb : batchesByUserId) {
+            if (userBatches.stream().noneMatch(existing -> existing.getStudentBatchId().equals(sb.getStudentBatchId()))) {
+                userBatches.add(sb);
+            }
+        }
 
         List<Course> enrolledCourses = userBatches.stream()
                 .map(sb -> courseRepository.findById(sb.getCourseId()).orElse(null))
@@ -64,7 +75,7 @@ public class DashboardCourseServiceImpl implements DashboardCourseService {
 
             // 🔥 collect sessions (for progress only, NOT for topics)
             List<Session> allSessions = courseBatches.stream()
-                    .flatMap(sb -> sessionRepository.findByBatchId(sb.getBatch().getBatchId()).stream())
+                    .flatMap(sb -> sessionRepository.findByBatchId(sb.getBatchId()).stream())
                     .collect(Collectors.toList());
 
             for (Session session : allSessions) {
@@ -123,11 +134,25 @@ public class DashboardCourseServiceImpl implements DashboardCourseService {
             boolean isCourseComplete =
                     totalSessions > 0 && totalSessions == completedSessions;
 
+            // Get instructor from the batch assigned to the student
+            String instructor = courseBatches.stream()
+                    .map(sb -> {
+                        if (sb.getBatch() != null) {
+                            return sb.getBatch().getTrainerName();
+                        }
+                        return "Lead Faculty";
+                    })
+                    .findFirst().orElse("Lead Faculty");
+            Long assignedBatchId = !courseBatches.isEmpty() ? courseBatches.get(0).getBatchId() : null;
+
             CourseProgressDTO courseDTO =
                     CourseProgressDTO.builder()
                             .courseId(course.getCourseId())
+                            .batchId(assignedBatchId)
                             .courseName(course.getCourseName())
                             .courseDescription(course.getDescription())
+                            .thumbnail(course.getCourseImageUrl())
+                            .instructorName(instructor)
                             .progressPercentage(courseProgressPercentage)
                             .topics(topicDTOs)
                             .build();

@@ -18,7 +18,7 @@ public class AdminInstallmentController {
     private final StudentInstallmentPlanService installmentService;
 
     @PostMapping("/{id}/generate-link")
-    @PreAuthorize("hasAuthority('INSTALLMENT_CREATE')")
+    @PreAuthorize("hasAuthority('INSTALLMENT_CREATE') or hasAuthority('ALL_PERMISSIONS')")
     public ResponseEntity<PaymentLinkResponse> generatePaymentLink(@PathVariable Long id) {
         StudentInstallmentPlan plan = installmentService.generatePaymentLink(id);
         if (plan == null) {

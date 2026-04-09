@@ -33,7 +33,7 @@ public class ExamQuestionController {
 
     // ================= GET QUESTIONS =================
     @GetMapping
-    @PreAuthorize("hasRole('STUDENT')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ROLE_INSTRUCTOR', 'ROLE_STUDENT', 'ALL_PERMISSIONS')")
     public ResponseEntity<List<Map<String, Object>>> getQuestions(
             @PathVariable Long examSectionId) {
 

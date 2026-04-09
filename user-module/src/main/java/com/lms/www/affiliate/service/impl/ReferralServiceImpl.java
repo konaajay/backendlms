@@ -10,8 +10,8 @@ import com.lms.www.affiliate.repository.AffiliateRepository;
 import com.lms.www.affiliate.repository.AffiliateSaleRepository;
 import com.lms.www.affiliate.repository.CommissionRuleRepository;
 import com.lms.www.affiliate.service.ReferralService;
-import com.lms.www.management.model.Course;
-import com.lms.www.management.service.CourseService;
+import com.lms.www.fee.allocation.repository.StudentFeeAllocationRepository;
+import com.lms.www.fee.allocation.entity.StudentFeeAllocation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,25 +29,28 @@ public class ReferralServiceImpl implements ReferralService {
     private final AffiliateSaleRepository saleRepository;
     private final AffiliateLinkRepository linkRepository;
     private final CommissionRuleRepository ruleRepository;
-    private final CourseService courseService;
     private final com.lms.www.affiliate.service.AffiliateService affiliateService;
     private final com.lms.www.security.UserContext userContext;
+    private final StudentFeeAllocationRepository allocationRepository;
+    private final com.lms.www.repository.UserRepository userRepository;
 
     public ReferralServiceImpl(
             AffiliateRepository affiliateRepository,
             AffiliateSaleRepository saleRepository,
             AffiliateLinkRepository linkRepository,
             CommissionRuleRepository ruleRepository,
-            CourseService courseService,
             com.lms.www.affiliate.service.AffiliateService affiliateService,
-            com.lms.www.security.UserContext userContext) {
+            com.lms.www.security.UserContext userContext,
+            StudentFeeAllocationRepository allocationRepository,
+            com.lms.www.repository.UserRepository userRepository) {
         this.affiliateRepository = affiliateRepository;
         this.saleRepository = saleRepository;
         this.linkRepository = linkRepository;
         this.ruleRepository = ruleRepository;
-        this.courseService = courseService;
         this.affiliateService = affiliateService;
         this.userContext = userContext;
+        this.allocationRepository = allocationRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -60,65 +63,73 @@ public class ReferralServiceImpl implements ReferralService {
             throw new SecurityException("Unauthorized access to another user's referrals");
         }
 
-        try {
-            // 1. Ensure Student Affiliate Account exists
-            Affiliate affiliate = affiliateRepository.findByUserId(currentUserId).orElse(null);
-            if (affiliate == null)
-                return null;
+        // 1. Ensure Student Affiliate Account exists (Auto-register if missing)
+        Affiliate affiliate = affiliateRepository.findByUserId(currentUserId).orElseGet(() -> {
+            log.info("Auto-registering student {} as affiliate to support referral links", currentUserId);
+            com.lms.www.model.User user = userRepository.findById(currentUserId)
+                    .orElseThrow(() -> new RuntimeException("Logged in user not found in DB: " + currentUserId));
 
-            // 2. Specific Course Eligibility
-            if (courseId != null) {
-                // Production Fix 5: Fallback logic is dangerous. Return null if not eligible.
-                com.lms.www.affiliate.entity.AffiliateSale sale = saleRepository
-                        .findByStudentIdAndCourseId(currentUserId, courseId)
-                        .orElse(null);
+            com.lms.www.affiliate.dto.RegisterAffiliateRequest regReq = new com.lms.www.affiliate.dto.RegisterAffiliateRequest();
+            regReq.setUserId(currentUserId);
+            regReq.setName((user.getFirstName() != null ? user.getFirstName() : "") + " " + (user.getLastName() != null ? user.getLastName() : ""));
+            regReq.setEmail(user.getEmail());
+            regReq.setMobile(user.getPhone() != null ? user.getPhone() : "0000000000");
 
-                if (sale == null) {
-                    log.warn("Refusal: User {} tried to refer course {} without purchase verification.", currentUserId,
-                            courseId);
-                    return null;
-                }
+            return affiliateService.registerStudentAsAffiliate(regReq);
+        });
 
-                // Production Fix 6: Null safety for saleOpt.get()
-                Long batchId = sale.getBatchId();
-
-                // 🔴 Production Fix 3: Idempotency (Check if link already exists)
-                Optional<AffiliateLink> existing = linkRepository.findByAffiliateAndBatchId(affiliate, batchId);
-                if (existing.isPresent()) {
-                    return existing.get().getReferralCode();
-                }
-
-                // 🔴 Production Fix 1: Rule Overrides
-                CommissionRule rule = ruleRepository.findByCourseIdAndActiveTrue(courseId).orElse(null);
-
-                BigDecimal commission = (rule != null) ? rule.getAffiliatePercent() : affiliate.getCommissionValue();
-                BigDecimal discount = (rule != null) ? rule.getStudentDiscountPercent()
-                        : affiliate.getStudentDiscountValue();
-
-                // 🔴 Production Fix 2: Validation for discount
-                if (discount == null)
-                    discount = BigDecimal.ZERO;
-                if (discount.compareTo(BigDecimal.ZERO) < 0 || discount.compareTo(BigDecimal.valueOf(100)) > 0) {
-                    log.error("Invalid discount configuration for course {}: {}%", courseId, discount);
-                    throw new IllegalArgumentException("Invalid discount configuration");
-                }
-
-                String generatedCode = affiliateService.generateLink(affiliate.getId(), courseId, batchId,
-                        commission, discount, null, null)
-                        .getReferralCode();
-
-                // 🔴 Production Fix 9: Logging success
-                log.info("Referral link generated: user={}, course={}, batch={}, code={}", currentUserId, courseId,
-                        batchId, generatedCode);
-                return generatedCode;
-            }
-
-            // Default to global code if no specific course requested
-            return affiliate.getReferralCode();
-        } catch (Exception e) {
-            log.error("Top-level referral code generation error for user {}: {}", currentUserId, e.getMessage());
+        if (affiliate == null) {
+            log.warn("Affiliate profile could not be created/found for user {}", currentUserId);
             return null;
         }
+
+        // 2. Specific Course Eligibility (Using Fee Allocation instead of Sales)
+        if (courseId != null) {
+            StudentFeeAllocation allocation = allocationRepository.findByUserId(currentUserId).stream()
+                    .filter(a -> a.getCourseId().equals(courseId))
+                    .findFirst()
+                    .orElse(null);
+
+            if (allocation == null) {
+                log.warn("Refusal: User {} tried to refer course {} without active enrollment.", currentUserId, courseId);
+                return null;
+            }
+
+            Long batchId = allocation.getBatchId();
+
+            // 🔴 Production Fix 3: Idempotency (Check if link already exists)
+            Optional<AffiliateLink> existing = linkRepository.findByAffiliateAndBatchId(affiliate, batchId);
+            if (existing.isPresent()) {
+                return existing.get().getReferralCode();
+            }
+
+            // 🔴 Production Fix 1: Rule Overrides
+            CommissionRule rule = ruleRepository.findByCourseIdAndActiveTrue(courseId).orElse(null);
+
+            BigDecimal commission = (rule != null) ? rule.getAffiliatePercent() : affiliate.getCommissionValue();
+            BigDecimal discount = (rule != null) ? rule.getStudentDiscountPercent()
+                    : affiliate.getStudentDiscountValue();
+
+            // 🔴 Production Fix 2: Validation for discount
+            if (discount == null)
+                discount = BigDecimal.ZERO;
+            if (discount.compareTo(BigDecimal.ZERO) < 0 || discount.compareTo(BigDecimal.valueOf(100)) > 0) {
+                log.error("Invalid discount configuration for course {}: {}%", courseId, discount);
+                throw new IllegalArgumentException("Invalid discount configuration");
+            }
+
+            String generatedCode = affiliateService.generateLink(affiliate.getId(), courseId, batchId,
+                    commission, discount, null, null)
+                    .getReferralCode();
+
+            // 🔴 Production Fix 9: Logging success
+            log.info("Referral link generated: user={}, course={}, batch={}, code={}", currentUserId, courseId,
+                    batchId, generatedCode);
+            return generatedCode;
+        }
+
+        // Default to global code if no specific course requested
+        return affiliate.getReferralCode();
     }
 
     @Override
@@ -145,7 +156,8 @@ public class ReferralServiceImpl implements ReferralService {
                     // Default logic: Only Students are restricted.
                     // Professional partners (Individual, Institutional) are always allowed.
                     if (com.lms.www.affiliate.entity.AffiliateType.STUDENT.equals(affiliate.getType())) {
-                        return saleRepository.existsByStudentIdAndCourseId(userId, courseId);
+                        return allocationRepository.findByUserId(userId).stream()
+                                .anyMatch(a -> a.getCourseId().equals(courseId));
                     }
                     return true;
                 }).orElse(true); // If we have a valid referral code but no linked User ID (professional
@@ -156,43 +168,29 @@ public class ReferralServiceImpl implements ReferralService {
     @Transactional(readOnly = true)
     public List<PurchasedCourseResponse> getPurchasedCourses(Long studentId) {
         Affiliate affiliate = affiliateRepository.findByUserId(studentId).orElse(null);
+        List<StudentFeeAllocation> allocations = allocationRepository.findByUserId(studentId);
 
-        // 🔴 Production Fix 8: Fetch sales list once (already done, but let's confirm
-        // usage)
-        List<com.lms.www.affiliate.entity.AffiliateSale> sales = saleRepository.findByStudentId(studentId);
-
-        return sales.stream()
-                .map(sale -> {
+        return allocations.stream()
+                .map(allocation -> {
                     String referralCode = null;
                     boolean hasLink = false;
 
                     if (affiliate != null) {
                         // Optimizing lookup: find existing link for this batch
                         Optional<com.lms.www.affiliate.entity.AffiliateLink> link = linkRepository
-                                .findByAffiliateAndBatchId(affiliate, sale.getBatchId());
+                                .findByAffiliateAndBatchId(affiliate, allocation.getBatchId());
                         if (link.isPresent()) {
                             referralCode = link.get().getReferralCode();
                             hasLink = true;
                         }
                     }
 
-                    // 🔴 Production Fix 7: Course name from Service
-                    String courseName = "Course " + sale.getCourseId();
-                    try {
-                        Course course = courseService.getCourseById(sale.getCourseId());
-                        if (course != null) {
-                            courseName = course.getCourseName();
-                        }
-                    } catch (Exception e) {
-                        log.warn("Could not fetch course name for ID {}: {}", sale.getCourseId(), e.getMessage());
-                    }
-
                     return PurchasedCourseResponse.builder()
-                            .courseId(sale.getCourseId())
-                            .batchId(sale.getBatchId())
-                            .courseName(courseName)
-                            .purchaseAmount(sale.getOrderAmount())
-                            .purchaseDate(sale.getCreatedAt())
+                            .courseId(allocation.getCourseId())
+                            .batchId(allocation.getBatchId())
+                            .courseName(allocation.getCourseName() != null ? allocation.getCourseName() : "Course " + allocation.getCourseId())
+                            .purchaseAmount(allocation.getPayableAmount())
+                            .purchaseDate(allocation.getAllocationDate().atStartOfDay())
                             .referralCode(referralCode)
                             .hasReferralLink(hasLink)
                             .build();

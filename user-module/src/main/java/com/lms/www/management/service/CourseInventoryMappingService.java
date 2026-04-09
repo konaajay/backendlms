@@ -7,6 +7,8 @@ import com.lms.www.management.model.CourseInventoryMapping;
 public interface CourseInventoryMappingService {
 
     CourseInventoryMapping createMapping(CourseInventoryMapping mapping);
+    
+    void createBulkMapping(java.util.Map<String, Object> data);
 
     List<CourseInventoryMapping> getMappingsByCourse(Long courseId);
 

@@ -45,7 +45,7 @@ public class SessionController {
 
     // ================= GET BY BATCH =================
     @GetMapping("/batch/{batchId}")
-    @PreAuthorize("hasAuthority('SESSION_VIEW') or hasAuthority('ROLE_INSTRUCTOR') or hasAuthority('ALL_PERMISSIONS')")
+    @PreAuthorize("hasAuthority('SESSION_VIEW') or hasAnyRole('INSTRUCTOR', 'STUDENT', 'ADMIN', 'SUPER_ADMIN') or hasAuthority('ALL_PERMISSIONS')")
     public ResponseEntity<List<Session>> getSessionsByBatchId(
             @PathVariable Long batchId) {
 

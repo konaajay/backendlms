@@ -29,13 +29,30 @@ public class WebinarPollController {
     private final WebinarPollService pollService;
 
     // =========================================================
-    // 📊 CREATE POLL
+    // 📊 CREATE POLL (Old)
     // =========================================================
     @SuppressWarnings("unchecked")
     @PostMapping
     @PreAuthorize("hasAuthority('WEBINAR_POLL_CREATE')")
     public ResponseEntity<WebinarPoll> createPoll(@RequestBody Map<String, Object> payload) {
+        return processCreatePoll(payload);
+    }
 
+    // =========================================================
+    // 📊 CREATE POLL (New - matches Doc/FE)
+    // =========================================================
+    @SuppressWarnings("unchecked")
+    @PostMapping("/webinar/{webinarId}")
+    @PreAuthorize("hasAuthority('WEBINAR_POLL_CREATE')")
+    public ResponseEntity<WebinarPoll> createPollByWebinar(
+            @PathVariable Long webinarId,
+            @RequestBody Map<String, Object> payload) {
+        payload.put("webinarId", webinarId);
+        return processCreatePoll(payload);
+    }
+
+    @SuppressWarnings("unchecked")
+    private ResponseEntity<WebinarPoll> processCreatePoll(Map<String, Object> payload) {
         if (payload.get("webinarId") == null ||
             payload.get("question") == null ||
             payload.get("options") == null ||

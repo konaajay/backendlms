@@ -7,10 +7,8 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.lms.www.management.model.InventoryStock;
-import com.lms.www.management.model.Item;
 import com.lms.www.management.model.StockOutward;
 import com.lms.www.management.repository.InventoryStockRepository;
-import com.lms.www.management.repository.ItemRepository;
 import com.lms.www.management.repository.StockOutwardRepository;
 import com.lms.www.management.service.StockOutwardService;
 
@@ -23,21 +21,14 @@ public class StockOutwardServiceImpl implements StockOutwardService {
     private final StockOutwardRepository stockOutwardRepository;
     private final InventoryStockRepository inventoryStockRepository;
 
-    // ✅ added
-    private final ItemRepository itemRepository;
-
     @Override
     public StockOutward issueStock(StockOutward stockOutward) {
 
-        // ✅ fetch item
-        Item item = itemRepository.findById(stockOutward.getItem().getId())
-                .orElseThrow(() -> new RuntimeException("Item not found"));
-
-        stockOutward.setItem(item);
+        String itemId = stockOutward.getItemId();
 
         InventoryStock inventory = inventoryStockRepository
-                .findByItem(stockOutward.getItem())
-                .orElseThrow(() -> new RuntimeException("Inventory not found"));
+                .findByItemId(itemId)
+                .orElseThrow(() -> new RuntimeException("Inventory not found for item: " + itemId));
 
         if (inventory.getAvailableStock() < stockOutward.getQuantity()) {
             throw new RuntimeException("Not enough stock available");

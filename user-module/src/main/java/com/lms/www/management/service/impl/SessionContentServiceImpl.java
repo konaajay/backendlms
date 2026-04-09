@@ -1,5 +1,6 @@
 package com.lms.www.management.service.impl;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -53,8 +54,10 @@ public class SessionContentServiceImpl implements SessionContentService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Session not found"));
 
+        // Retrieve both ACTIVE and legacy NULL status records
         return sessionContentRepository
-                .findBySessionIdAndStatus(session.getSessionId(), "ACTIVE");
+                .findBySessionIdAndStatusIn(session.getSessionId(), List.of("ACTIVE", "PENDING", "PROCESSING", "DONE"));
+        // Alternatively, if the repository doesn't have In, I'll update it. 
     }
 
     // ================= UPDATE =================
@@ -80,8 +83,6 @@ public class SessionContentServiceImpl implements SessionContentService {
         if (updatedContent.getFileUrl() != null) {
             existing.setFileUrl(updatedContent.getFileUrl());
 
-            // 🔥 AUTO EXTRACT VIDEO DURATION
-            if ("VIDEO".equalsIgnoreCase(existing.getContentType())) {
                 try {
                     String projectRoot = System.getProperty("user.dir");
                     String absolutePath = projectRoot +
@@ -107,14 +108,19 @@ public class SessionContentServiceImpl implements SessionContentService {
                     process.waitFor();
 
                     if (output != null) {
-                        double durationSeconds = Double.parseDouble(output);
-                        existing.setTotalDuration((int) Math.round(durationSeconds));
+                        try {
+                            double durationSeconds = Double.parseDouble(output);
+                            existing.setTotalDuration((int) Math.round(durationSeconds));
+                        } catch (NumberFormatException e) {
+                            System.err.println("Invalid ffprobe output: " + output);
+                        }
                     }
 
+                } catch (IOException | InterruptedException e) {
+                    System.err.println("FFmpeg not found or failed. Proceeding without duration. Error: " + e.getMessage());
                 } catch (Exception e) {
-                    throw new RuntimeException("Failed to extract video duration", e);
+                    System.err.println("Video duration extraction failed: " + e.getMessage());
                 }
-            }
         }
 
         return sessionContentRepository.save(existing);

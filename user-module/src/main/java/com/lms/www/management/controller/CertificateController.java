@@ -36,25 +36,39 @@ public class CertificateController {
 
     private final CertificateService certificateService;
     private final CertificateRepository certificateRepository;
+    private final com.lms.www.security.UserContext userContext;
 
     // =========================================================
     // 🔐 MANUAL GENERATE
     // =========================================================
     @PostMapping("/manual-generate")
     @PreAuthorize("hasAuthority('CERTIFICATE_GENERATE') or hasAuthority('ROLE_INSTRUCTOR') or hasAuthority('ALL_PERMISSIONS')")
-    public Certificate manualGenerate(@RequestBody Map<String, String> request) {
+    public Certificate manualGenerate(@RequestBody Map<String, Object> request) {
 
-        Long userId = Long.parseLong(request.get("userId"));
-        TargetType targetType = TargetType.valueOf(request.get("targetType"));
-        Long targetId = Long.parseLong(request.get("targetId"));
+        Long userId = request.get("userId") != null 
+                ? Long.valueOf(request.get("userId").toString()) 
+                : (request.get("studentId") != null ? Long.valueOf(request.get("studentId").toString()) : null);
+                
+        String targetTypeStr = request.get("targetType") != null 
+                ? request.get("targetType").toString().toUpperCase() 
+                : null;
+        TargetType targetType = targetTypeStr != null ? TargetType.valueOf(targetTypeStr) : null;
+        
+        Long targetId = request.get("targetId") != null 
+                ? Long.valueOf(request.get("targetId").toString()) 
+                : null;
 
-        String studentName = request.get("studentName");
-        String studentEmail = request.get("studentEmail");
-        String eventTitle = request.get("eventTitle");
+        String studentName = request.get("studentName") != null ? request.get("studentName").toString() : null;
+        String studentEmail = request.get("studentEmail") != null ? request.get("studentEmail").toString() : null;
+        String eventTitle = request.get("eventTitle") != null ? request.get("eventTitle").toString() : null;
 
         Double score = request.get("score") != null
-                ? Double.valueOf(request.get("score"))
+                ? Double.valueOf(request.get("score").toString())
                 : null;
+
+        if (userId == null || targetType == null || targetId == null) {
+            throw new IllegalArgumentException("Missing required fields: userId, targetType, or targetId");
+        }
 
         return certificateService.generateCertificate(
                 userId,
@@ -152,6 +166,16 @@ public class CertificateController {
     @GetMapping("/user/{userId}")
     @PreAuthorize("hasAuthority('CERTIFICATE_VIEW_SELF') or hasAuthority('CERTIFICATE_VIEW_ALL') or hasAuthority('ROLE_INSTRUCTOR') or hasAuthority('ALL_PERMISSIONS')")
     public List<Certificate> getCertificatesByUser(@PathVariable Long userId) {
+        return certificateRepository.findByUserId(userId);
+    }
+
+    @GetMapping("/my")
+    @PreAuthorize("hasAuthority('CERTIFICATE_VIEW_SELF') or hasAuthority('ALL_PERMISSIONS')")
+    public List<Certificate> getMyCertificates() {
+        Long userId = userContext.getCurrentUserId();
+        if (userId == null) {
+            throw new RuntimeException("User not authenticated");
+        }
         return certificateRepository.findByUserId(userId);
     }
 

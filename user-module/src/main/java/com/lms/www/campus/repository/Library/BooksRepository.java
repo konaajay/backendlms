@@ -3,15 +3,22 @@ package com.lms.www.campus.repository.Library;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.EntityGraph;
 
 import com.lms.www.campus.Library.Books;
 
+@org.springframework.stereotype.Repository
 public interface BooksRepository extends JpaRepository<Books, Long> {
 
-	@org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "barcodes", "category" })
+	@EntityGraph(attributePaths = { "barcodes", "category" })
 	List<Books> findByIsDeletedFalse();
+
+	@EntityGraph(attributePaths = { "barcodes", "category" })
+    Page<Books> findByIsDeletedFalse(Pageable pageable);
 
     Optional<Books> findByIsbnAndIsDeletedFalse(String isbn);
 

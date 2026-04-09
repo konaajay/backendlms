@@ -63,13 +63,22 @@ public class StudentCalendarServiceImpl implements StudentCalendarService {
                                         .build());
                 }
 
-                // Fetch user batches
-                List<StudentBatch> userBatches = studentBatchRepository.findByStudentId(userId);
+                // Fetch user batches (check both columns for robustness)
+                List<StudentBatch> batchesByStudentId = studentBatchRepository.findByStudentId(userId);
+                List<StudentBatch> batchesByUserId = studentBatchRepository.findByUserId(userId);
+                
+                List<StudentBatch> userBatches = new ArrayList<>(batchesByStudentId);
+                for (StudentBatch sb : batchesByUserId) {
+                    if (userBatches.stream().noneMatch(existing -> existing.getStudentBatchId().equals(sb.getStudentBatchId()))) {
+                        userBatches.add(sb);
+                    }
+                }
 
-                if (userBatches != null && !userBatches.isEmpty()) {
+                if (!userBatches.isEmpty()) {
 
                         List<Long> batchIds = userBatches.stream()
-                                        .map(sb -> sb.getBatch().getBatchId()) // ✅ FIXED
+                                        .map(StudentBatch::getBatchId)
+                                        .filter(java.util.Objects::nonNull)
                                         .distinct()
                                         .collect(Collectors.toList());
 

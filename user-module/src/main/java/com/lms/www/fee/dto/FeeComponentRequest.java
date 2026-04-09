@@ -2,7 +2,11 @@ package com.lms.www.fee.dto;
 
 import java.math.BigDecimal;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class FeeComponentRequest {
+    private Object id;
     private String name;
     private Long feeTypeId;
     private BigDecimal amount;
@@ -12,6 +16,16 @@ public class FeeComponentRequest {
     private java.time.LocalDate dueDate;
 
     public FeeComponentRequest() {}
+
+    public Long getId() {
+        if (id instanceof Number) return ((Number) id).longValue();
+        if (id instanceof String) {
+            try { return Long.parseLong((String) id); } catch (Exception e) { return null; }
+        }
+        return null;
+    }
+
+    public void setId(Object id) { this.id = id; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

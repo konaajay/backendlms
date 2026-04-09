@@ -3,15 +3,43 @@ package com.lms.www.fee.dto;
 import java.math.BigDecimal;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class FeeStructureRequest {
+    private Object id;
+    @JsonProperty("name")
+    @NotBlank(message = "Structure name is required")
     private String name;
+
+    @JsonProperty("academicYear")
+    @NotBlank(message = "Academic year is required")
     private String academicYear;
+
+    @JsonProperty("courseId")
+    @NotNull(message = "Course ID is required")
     private Long courseId;
+
+    @JsonProperty("batchId")
     private Long batchId;
+
+    @JsonProperty("batchName")
     private String batchName;
+
+    @JsonProperty("courseName")
     private String courseName;
+
+    @JsonProperty("baseAmount")
     private BigDecimal baseAmount;
+
+    @JsonProperty("totalAmount")
     private BigDecimal totalAmount;
+
+    @JsonProperty("durationMonths")
+    @NotNull(message = "Duration in months is required")
     private Integer durationMonths;
 
     private Integer installmentCount;
@@ -34,6 +62,16 @@ public class FeeStructureRequest {
     private Boolean isActive;
 
     public FeeStructureRequest() {}
+
+    public Long getId() {
+        if (id instanceof Number) return ((Number) id).longValue();
+        if (id instanceof String) {
+            try { return Long.parseLong((String) id); } catch (Exception e) { return null; }
+        }
+        return null;
+    }
+
+    public void setId(Object id) { this.id = id; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

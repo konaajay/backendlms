@@ -45,7 +45,7 @@ public class SessionContent {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "order_index")
+    @jakarta.persistence.Transient
     private Integer orderIndex;
 
     @Column(name = "total_duration")
@@ -66,6 +66,7 @@ public class SessionContent {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        if (this.status == null) this.status = "ACTIVE";
     }
 
     @PreUpdate

@@ -144,13 +144,22 @@ public class AttendanceRecordController {
      );
  }
  
+  @GetMapping("/batch/{batchId}")
+  @PreAuthorize("hasAuthority('ATTENDANCE_RECORD_VIEW') or hasAuthority('ROLE_INSTRUCTOR') or hasAuthority('ALL_PERMISSIONS')")
+  public List<AttendanceRecord> getByBatch(
+          @PathVariable Long batchId
+  ) {
+      return attendanceRecordService.getByBatch(batchId);
+  }
+
   @GetMapping("/dashboard")
   @PreAuthorize("hasAuthority('ATTENDANCE_RECORD_VIEW') or hasAuthority('ROLE_INSTRUCTOR') or hasAuthority('ALL_PERMISSIONS')")
   public List<StudentAttendanceStatus> getDashboardAttendanceStatus(
          @RequestParam Long courseId,
-         @RequestParam Long batchId
+         @RequestParam Long batchId,
+         @RequestParam(required = false) Long sessionId
  ) {
-     return attendanceRecordService.getDashboardAttendanceStatus(courseId, batchId);
+     return attendanceRecordService.getDashboardAttendanceStatus(courseId, batchId, sessionId);
  }
  
  

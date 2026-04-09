@@ -81,7 +81,9 @@ public class AllocationServiceImpl implements AllocationService {
         BigDecimal installmentBase = BigDecimal.ZERO;
 
         for (var c : structure.getComponents()) {
-            if (c.getAmount() != null) {
+            // ONLY sum breakdown components (those WITHOUT a due date)
+            // Items WITH a due date are installments and should not be part of the base calculation
+            if (c.getAmount() != null && c.getDueDate() == null) {
                 if (Boolean.FALSE.equals(c.getInstallmentAllowed())) oneTimeBase = oneTimeBase.add(c.getAmount());
                 else installmentBase = installmentBase.add(c.getAmount());
             }

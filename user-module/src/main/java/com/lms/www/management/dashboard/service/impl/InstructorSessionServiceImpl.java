@@ -52,10 +52,20 @@ public class InstructorSessionServiceImpl implements InstructorSessionService {
         return sessionService.getSessionsByBatchId(batchId);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Session getSessionById(Long instructorId, Long sessionId) {
+        validateSessionOwnership(instructorId, sessionId);
+        return sessionRepository.findById(sessionId).orElseThrow(() -> new ResourceNotFoundException("Session not found"));
+    }
+
     private void validateBatchOwnership(Long instructorId, Long batchId) {
+        if (instructorId == null) {
+            throw new AccessDeniedException("User identity not found. Please log in again.");
+        }
         Batch batch = batchRepository.findById(batchId)
                 .orElseThrow(() -> new ResourceNotFoundException("Batch not found"));
-        if (!instructorId.equals(batch.getTrainerId())) {
+        if (!java.util.Objects.equals(instructorId, batch.getTrainerId())) {
             throw new AccessDeniedException("Unauthorized to access this batch");
         }
     }

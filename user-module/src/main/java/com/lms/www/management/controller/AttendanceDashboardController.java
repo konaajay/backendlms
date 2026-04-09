@@ -21,9 +21,10 @@ public class AttendanceDashboardController {
     @PreAuthorize("hasAuthority('ATTENDANCE_RECORD_VIEW')")
     public List<StudentAttendanceStatus> getDashboardStatus(
             @RequestParam Long courseId,
-            @RequestParam Long batchId
+            @RequestParam Long batchId,
+            @RequestParam(required = false) Long sessionId
     ) {
         return attendanceRecordService
-                .getDashboardAttendanceStatus(courseId, batchId);
+                .getDashboardAttendanceStatus(courseId, batchId, sessionId);
     }
 }

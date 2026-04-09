@@ -21,4 +21,8 @@ public interface ExamAttemptService {
     ExamAttempt getAttemptByIdForSystem(Long attemptId);
 
     ExamAttempt updateAttemptStatus(ExamAttempt attempt);
+
+    java.util.List<ExamAttempt> getAttemptsByExam(Long examId);
+
+    java.util.List<ExamAttempt> getAttemptsByInstructor(Long instructorId);
 }

@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import com.lms.www.management.repository.BatchRepository;
 
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,7 @@ import com.lms.www.management.model.Exam;
 import com.lms.www.management.model.ExamAttempt;
 import com.lms.www.management.model.ExamSchedule;
 import com.lms.www.management.model.Session;
+import com.lms.www.management.model.SessionContent;
 import com.lms.www.management.model.StudentBatch;
 import com.lms.www.management.model.WebinarRegistration;
 import com.lms.www.management.repository.AttendanceRecordRepository;
@@ -50,38 +52,73 @@ public class DashboardMetricsServiceImpl implements DashboardMetricsService {
     
 
     private final SessionRepository sessionRepository; // ✅ ADDED
+    private final BatchRepository batchRepository;
 
     @Override
     public List<BatchSummaryDTO> getBatchesForStudent(Long studentId) {
+        // 🔥 Get all user batches
+        List<StudentBatch> batchesByStudentId = studentBatchRepository.findByStudentIdWithBatch(studentId);
+        List<StudentBatch> batchesByUserId = studentBatchRepository.findByUserId(studentId);
+        
+        java.util.Set<Long> processedBatchIds = new java.util.HashSet<>();
+        List<StudentBatch> userBatches = new java.util.ArrayList<>();
+        
+        for (StudentBatch sb : batchesByStudentId) {
+            if (processedBatchIds.add(sb.getStudentBatchId())) {
+                userBatches.add(sb);
+            }
+        }
+        for (StudentBatch sb : batchesByUserId) {
+            if (processedBatchIds.add(sb.getStudentBatchId())) {
+                userBatches.add(sb);
+            }
+        }
 
-        List<StudentBatch> userBatches = studentBatchRepository.findByStudentIdWithBatch(studentId);
+        if (userBatches.isEmpty()) return java.util.Collections.emptyList();
+
+        List<Long> batchIds = userBatches.stream().map(StudentBatch::getBatchId).distinct().toList();
+
+        // 1. Batch fetch all sessions for all batches
+        List<Session> allSessions = sessionRepository.findByBatchIdIn(batchIds);
+        java.util.Map<Long, List<Session>> sessionsByBatch = allSessions.stream()
+                .collect(Collectors.groupingBy(Session::getBatchId));
+
+        // 2. Batch fetch all session contents for all sessions
+        List<Long> sessionIds = allSessions.stream().map(Session::getSessionId).toList();
+        java.util.Map<Long, List<SessionContent>> contentsBySession = java.util.Collections.emptyMap();
+        if (!sessionIds.isEmpty()) {
+            contentsBySession = sessionContentRepository.findBySessionIdIn(sessionIds).stream()
+                    .collect(Collectors.groupingBy(SessionContent::getSessionId));
+        }
+
+        final java.util.Map<Long, List<SessionContent>> finalContentsBySession = contentsBySession;
 
         return userBatches.stream()
                 .map(sb -> {
+                    // Refresh batch if needed
+                    if (sb.getBatch() == null) {
+                        try {
+                            sb.setBatch(batchRepository.findById(sb.getBatchId()).orElse(null));
+                        } catch (Exception e) {}
+                    }
 
-                    // ✅ FETCH SESSIONS FOR THIS BATCH
-                    List<Session> sessions = sessionRepository.findByBatchId(
-                            sb.getBatch().getBatchId()
-                    );
+                    List<Session> sessions = sessionsByBatch.getOrDefault(sb.getBatchId(), java.util.Collections.emptyList());
 
-                    // ✅ MAP TO DTO
                     List<SessionProgressDTO> sessionDTOs = sessions.stream()
                             .map(session -> {
-
-                                // 🔥 GET CONTENTS
-                                List<SessionContentDTO> contentDTOs =
-                                        sessionContentRepository.findBySessionId(session.getSessionId())
-                                                .stream()
-                                                .map(c -> SessionContentDTO.builder()
-                                                        .sessionContentId(c.getSessionContentId())
-                                                        .title(c.getTitle())
-                                                        .description(c.getDescription())
-                                                        .contentType(c.getContentType())
-                                                        .fileUrl(c.getFileUrl())
-                                                        .status(c.getStatus())
-                                                        .totalDuration(c.getTotalDuration())
-                                                        .build())
-                                                .collect(Collectors.toList());
+                                List<SessionContent> contents = finalContentsBySession.getOrDefault(session.getSessionId(), java.util.Collections.emptyList());
+                                
+                                List<SessionContentDTO> contentDTOs = contents.stream()
+                                        .map(c -> SessionContentDTO.builder()
+                                                .sessionContentId(c.getSessionContentId())
+                                                .title(c.getTitle())
+                                                .description(c.getDescription())
+                                                .contentType(c.getContentType())
+                                                .fileUrl(c.getFileUrl())
+                                                .status(c.getStatus())
+                                                .totalDuration(c.getTotalDuration())
+                                                .build())
+                                        .collect(Collectors.toList());
 
                                 return SessionProgressDTO.builder()
                                         .sessionId(session.getSessionId())
@@ -89,21 +126,20 @@ public class DashboardMetricsServiceImpl implements DashboardMetricsService {
                                         .type(session.getSessionType())
                                         .completed(false)
                                         .videoProgressPercentage(0.0)
-                                        .contents(contentDTOs) // ✅ ADD THIS
+                                        .contents(contentDTOs)
                                         .build();
                             })
                             .collect(Collectors.toList());
 
                     return BatchSummaryDTO.builder()
-                            .batchId(sb.getBatch().getBatchId())
-                            .batchName(sb.getBatch().getBatchName())
-                            .startDate(sb.getBatch().getStartDate())
-                            .endDate(sb.getBatch().getEndDate())
-                            .instructorInfo(
-                                    sb.getBatch().getTrainerName() != null
+                            .batchId(sb.getBatchId())
+                            .batchName(sb.getBatch() != null ? sb.getBatch().getBatchName() : "Unnamed Batch")
+                            .startDate(sb.getBatch() != null ? sb.getBatch().getStartDate() : null)
+                            .endDate(sb.getBatch() != null ? sb.getBatch().getEndDate() : null)
+                            .instructorInfo(sb.getBatch() != null && sb.getBatch().getTrainerName() != null
                                             ? sb.getBatch().getTrainerName()
                                             : "TBD")
-                            .sessions(sessionDTOs) // ✅ IMPORTANT
+                            .sessions(sessionDTOs)
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -140,38 +176,50 @@ public class DashboardMetricsServiceImpl implements DashboardMetricsService {
 
     @Override
     public List<ExamSummaryDTO> getExamsForStudent(Long studentId) {
-
         List<StudentBatch> batches = studentBatchRepository.findByStudentId(studentId);
+        List<Long> batchIds = batches.stream().map(StudentBatch::getBatchId).toList();
 
-        List<Long> batchIds = batches.stream()
-                .map(sb -> sb.getBatch().getBatchId())
-                .toList();
+        if (batchIds.isEmpty()) return java.util.Collections.emptyList();
 
         LocalDateTime now = LocalDateTime.now();
-
-        List<ExamSchedule> schedules =
-                examScheduleRepository.findByBatchIdInAndIsActiveTrue(batchIds);
-
-        return schedules.stream()
+        List<ExamSchedule> activeSchedules = examScheduleRepository.findByBatchIdInAndIsActiveTrue(batchIds).stream()
                 .filter(s -> now.isAfter(s.getStartTime()) && now.isBefore(s.getEndTime()))
-                .map(s -> {
+                .toList();
 
-                    Exam exam = examRepository.findById(s.getExamId()).orElse(null);
+        if (activeSchedules.isEmpty()) return java.util.Collections.emptyList();
+
+        List<Long> examIds = activeSchedules.stream().map(ExamSchedule::getExamId).distinct().toList();
+
+        // Batch fetch Exams
+        java.util.Map<Long, Exam> examMap = examRepository.findAllById(examIds).stream()
+                .collect(Collectors.toMap(Exam::getExamId, e -> e));
+
+        // Batch fetch all attempts for these exams by this student
+        List<ExamAttempt> allAttempts = examAttemptRepository.findByStudentIdAndExamIdIn(studentId, examIds);
+        
+        // Find latest attempt per exam
+        java.util.Map<Long, ExamAttempt> latestAttemptMap = allAttempts.stream()
+                .collect(Collectors.toMap(
+                    ExamAttempt::getExamId,
+                    a -> a,
+                    (existing, replacement) -> existing.getStartTime().isAfter(replacement.getStartTime()) ? existing : replacement
+                ));
+
+        return activeSchedules.stream()
+                .map(s -> {
+                    Exam exam = examMap.get(s.getExamId());
                     if (exam == null) return null;
 
-                    Optional<ExamAttempt> attemptOpt =
-                            examAttemptRepository.findFirstByStudentIdAndExamIdOrderByStartTimeDesc(studentId, exam.getExamId());
+                    ExamAttempt latestAttempt = latestAttemptMap.get(exam.getExamId());
 
-                    if (attemptOpt.isPresent()) {
-                        ExamAttempt attempt = attemptOpt.get();
-
+                    if (latestAttempt != null) {
                         return ExamSummaryDTO.builder()
                                 .examId(exam.getExamId())
                                 .examName(exam.getTitle())
-                                .attemptStatus(attempt.getStatus())
-                                .score(attempt.getScore() != null ? attempt.getScore() : 0.0)
+                                .attemptStatus(latestAttempt.getStatus())
+                                .score(latestAttempt.getScore() != null ? latestAttempt.getScore() : 0.0)
                                 .passFailStatus("N/A")
-                                .attemptDate(attempt.getStartTime())
+                                .attemptDate(latestAttempt.getStartTime())
                                 .build();
                     } else {
                         return ExamSummaryDTO.builder()
@@ -184,7 +232,7 @@ public class DashboardMetricsServiceImpl implements DashboardMetricsService {
                                 .build();
                     }
                 })
-                .filter(e -> e != null)
+                .filter(java.util.Objects::nonNull)
                 .toList();
     }
     
@@ -213,7 +261,9 @@ public class DashboardMetricsServiceImpl implements DashboardMetricsService {
                 webinarRegistrationRepository.findByUserId(studentId);
 
         return registrations.stream()
-                .map(reg -> WebinarSummaryDTO.builder()
+                .map(reg -> {
+                    if (reg.getWebinar() == null) return null;
+                    return WebinarSummaryDTO.builder()
                         .webinarId(reg.getWebinar().getWebinarId())
                         .webinarTitle(reg.getWebinar().getTitle())
                         .registrationStatus(
@@ -223,7 +273,9 @@ public class DashboardMetricsServiceImpl implements DashboardMetricsService {
                         .attendanceStatus("N/A")
                         .webinarDate(reg.getWebinar().getStartTime())
                         .recordingUrl(null)
-                        .build())
+                        .build();
+                })
+                .filter(java.util.Objects::nonNull)
                 .collect(Collectors.toList());
     }
 }

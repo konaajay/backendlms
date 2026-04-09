@@ -10,6 +10,8 @@ import lombok.Data;
 public class StudentExamSectionDTO {
     private Long examSectionId;
     private Long sectionId;
+    private String sectionName;
+    private String sectionDescription;
     private Integer sectionOrder;
     private Boolean shuffleQuestions;
     private List<StudentExamQuestionDTO> questions;

@@ -26,10 +26,17 @@ public class CourseInventoryMappingController {
 
     @PostMapping
     @PreAuthorize("hasAnyAuthority('COURSE_INVENTORY_CREATE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
-    public ResponseEntity<CourseInventoryMapping> createMapping(
-            @RequestBody CourseInventoryMapping mapping) {
+    public ResponseEntity<?> createMapping(
+            @RequestBody java.util.Map<String, Object> data) {
 
-        return ResponseEntity.ok(mappingService.createMapping(mapping));
+        if (data.containsKey("mandatoryItems") || data.containsKey("optionalItems")) {
+            mappingService.createBulkMapping(data);
+            return ResponseEntity.ok("Bulk mapping completed successfully");
+        }
+        
+        // Fallback for single mapping (if the object matches CourseInventoryMapping)
+        // Note: For simplicity, we could just return 200 after bulk
+        return ResponseEntity.status(400).body("Invalid mapping payload. Expected course-batch configuration.");
     }
 
     @GetMapping

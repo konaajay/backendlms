@@ -18,4 +18,5 @@ public class UpdateAllocationRequest {
     private Integer installmentCount;
 
     private BigDecimal promoDiscount;
+    private String appliedPromoCode;
 }

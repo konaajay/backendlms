@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 
+@org.springframework.stereotype.Repository
 public interface BookIssueRecordRepository extends JpaRepository<BookIssueRecord, Long> {
 
 	long countByUserIdAndStatus(Long userId, BookIssueRecord.Status status);
@@ -32,4 +33,10 @@ public interface BookIssueRecordRepository extends JpaRepository<BookIssueRecord
 
 	@EntityGraph(attributePaths = { "book", "book.category" })
 	Page<BookIssueRecord> findByUserId(Long userId, Pageable pageable);
+
+	@EntityGraph(attributePaths = { "book", "book.category" })
+	List<BookIssueRecord> findByUserIdAndStatus(Long userId, BookIssueRecord.Status status);
+
+	@EntityGraph(attributePaths = { "book", "book.category" })
+	List<BookIssueRecord> findByUserIdAndStatusIn(Long userId, List<BookIssueRecord.Status> statuses);
 }

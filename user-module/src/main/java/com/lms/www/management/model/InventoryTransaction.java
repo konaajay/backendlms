@@ -30,9 +30,8 @@ public class InventoryTransaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "item_id", nullable = false)
-    private Item item;
+    @Column(name = "item_id", nullable = false, length = 255)
+    private String itemId;
 
     @Column(name = "transaction_type", length = 50, nullable = false)
     private String transactionType; // INWARD / OUTWARD / RETURN / ADJUSTMENT / DAMAGE
@@ -48,7 +47,7 @@ public class InventoryTransaction {
     private String referenceType;
 
     @Column(name = "performed_by")
-    private Long performedBy;
+    private String performedBy;
 
     @Column(name = "stock_type")
     private String stockType; // Added to match DB

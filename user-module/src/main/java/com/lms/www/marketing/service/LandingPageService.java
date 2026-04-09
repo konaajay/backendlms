@@ -18,6 +18,10 @@ public class LandingPageService {
     private final LandingPageRepository landingPageRepository;
 
     public LandingPage getBySlug(String slug) {
+        if (landingPageRepository.count() == 0) {
+            log.info("Repository empty, auto-seeding defaults before fetching slug: {}", slug);
+            seedDefaults();
+        }
         return landingPageRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Landing page not found with slug: " + slug));
     }
@@ -78,7 +82,7 @@ public class LandingPageService {
         List<LandingPage> defaults = new ArrayList<>();
 
         LandingPage main = new LandingPage();
-        main.setSlug("main-course-platform");
+        main.setSlug("marketing");
         main.setTitle("LMS Elite Learning");
         main.setHeadline("Master Your Future with Our Cloud-Based Solutions");
         main.setSubtitle("Join 5000+ students already learning with us.");

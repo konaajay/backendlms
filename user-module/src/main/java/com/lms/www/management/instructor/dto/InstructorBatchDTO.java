@@ -22,4 +22,5 @@ public class InstructorBatchDTO {
     private Integer studentsCount;
 
     private String courseName; // optional
+    private Long courseId;
 }

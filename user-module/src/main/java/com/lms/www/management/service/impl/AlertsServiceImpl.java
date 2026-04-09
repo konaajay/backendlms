@@ -22,9 +22,7 @@ public class AlertsServiceImpl implements AlertsService {
         return inventoryStockRepository.findAll()
                 .stream()
                 .filter(stock -> stock.getAvailableStock() != null &&
-                        stock.getItem() != null &&
-                        stock.getItem().getMinStockLevel() != null &&
-                        stock.getAvailableStock() < stock.getItem().getMinStockLevel())
+                        stock.getAvailableStock() < 5) // Default low stock threshold
                 .toList();
     }
 

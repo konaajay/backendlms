@@ -501,6 +501,10 @@ public class TransportService {
         return attendanceRepository.findAll();
     }
 
+    public List<TransportAttendance> getAttendanceByVehicleAndDate(Long vehicleId, java.time.LocalDate date) {
+        return attendanceRepository.findByVehicle_IdAndAttendanceDate(vehicleId, date);
+    }
+
     public TransportAttendance getAttendanceById(Long id) {
         return attendanceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Attendance not found"));

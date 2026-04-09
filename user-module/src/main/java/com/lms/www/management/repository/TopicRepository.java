@@ -16,14 +16,10 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
 
     List<Topic> findByCourseCourseIdAndStatus(Long courseId, String status);
 
-    // 🔥 HARD DELETE SUPPORT
     @Modifying
     @Transactional
-    @Query("""
-        delete from Topic t
-        where t.course.courseId = :courseId
-    """)
+    @Query("delete from Topic t where t.course.courseId = :courseId")
     void deleteByCourseId(@Param("courseId") Long courseId);
-    
-    
+
+    long countByCourseCourseId(Long courseId);
 }

@@ -129,36 +129,57 @@ public class CertificateServiceImpl implements CertificateService {
                         String eventTitle,
                         Double score) {
 
-                if (certificateRepository.existsByUserIdAndTargetTypeAndTargetId(
-                                userId, targetType, targetId)) {
-                        throw new IllegalStateException("Certificate already exists");
+                if (userId == null || targetId == null) {
+                    throw new IllegalArgumentException("User ID and Target ID must not be null");
                 }
+
+                return certificateRepository.findByUserIdAndTargetTypeAndTargetId(userId, targetType, targetId)
+                                .orElseGet(() -> {
+                                        // Proceed with generation if not found
+                                        return generateNewCertificate(userId, targetType, targetId, studentName, studentEmail, eventTitle, score);
+                                });
+        }
+
+        private Certificate generateNewCertificate(
+                        Long userId,
+                        TargetType targetType,
+                        Long targetId,
+                        String studentName,
+                        String studentEmail,
+                        String eventTitle,
+                        Double score) {
 
                 String certificateId = "CERT-" + UUID.randomUUID()
                                 .toString().substring(0, 8).toUpperCase();
+
+                if (certificateId == null) {
+                    throw new RuntimeException("Failed to generate certificate ID");
+                }
 
                 String verificationToken = UUID.randomUUID().toString();
 
                 CertificateTemplate template = null;
 
                 // 1️⃣ Course-specific template
-                if (targetType == TargetType.COURSE) {
+                if (targetType == TargetType.COURSE && targetId != null) {
                         Course course = courseRepository.findById(targetId).orElse(null);
                         if (course != null && course.getCertificateTemplateId() != null) {
-                                template = templateRepository.findById(course.getCertificateTemplateId()).orElse(null);
+                                Long courseTemplateId = course.getCertificateTemplateId();
+                                template = templateRepository.findById(courseTemplateId).orElse(null);
                         }
                 }
 
                 // 2️⃣ Exam-specific template
-                else if (targetType == TargetType.EXAM) {
+                else if (targetType == TargetType.EXAM && targetId != null) {
                         Exam exam = examRepository.findById(targetId).orElse(null);
                         if (exam != null && exam.getCertificateTemplateId() != null) {
-                                template = templateRepository.findById(exam.getCertificateTemplateId()).orElse(null);
+                                Long examTemplateId = exam.getCertificateTemplateId();
+                                template = templateRepository.findById(examTemplateId).orElse(null);
                         }
                 }
 
                 // 3️⃣ Target-specific template
-                if (template == null) {
+                if (template == null && targetId != null) {
                         template = templateRepository
                                         .findFirstByTargetTypeAndTargetIdAndIsActiveTrue(targetType, targetId)
                                         .orElse(null);
@@ -176,16 +197,26 @@ public class CertificateServiceImpl implements CertificateService {
                 }
 
                 if (template == null) {
-                        throw new IllegalStateException("No certificate template configured");
+                        try {
+                                template = CertificateTemplate.builder()
+                                                .templateName("System Default Template")
+                                                .templateType("DEFAULT")
+                                                .isActive(true)
+                                                .targetType(targetType)
+                                                .build();
+                                template = templateRepository.save(template);
+                        } catch (Exception e) {
+                                throw new IllegalStateException("No certificate template configured and failed to create fallback", e);
+                        }
                 }
 
                 Certificate certificate = Certificate.builder()
-                                .certificateNumber(certificateId)
+                                .certificateId(certificateId)
                                 .verificationToken(verificationToken)
                                 .studentId(userId)
                                 .studentName(studentName)
                                 .studentEmail(studentEmail)
-                                .targetType(targetType != null ? targetType.name() : null)
+                                .targetType(targetType)
                                 .targetId(targetId)
                                 .eventTitle(eventTitle)
                                 .score(score != null ? score : 0.0)
@@ -199,14 +230,17 @@ public class CertificateServiceImpl implements CertificateService {
 
                 Certificate saved = certificateRepository.save(certificate);
 
-                auditLogRepository.save(
-                                CertificateAuditLog.builder()
-                                                .certificateId(saved.getId())
-                                                .action("GENERATED")
-                                                .performedBy(userId)
-                                                .actionDate(LocalDateTime.now())
-                                                .remarks("Certificate generated")
-                                                .build());
+                if (saved != null && saved.getId() != null) {
+                    Long savedId = saved.getId();
+                    auditLogRepository.save(
+                                    CertificateAuditLog.builder()
+                                                    .certificateId(savedId)
+                                                    .action("GENERATED")
+                                                    .performedBy(userId)
+                                                    .actionDate(LocalDateTime.now())
+                                                    .remarks("Certificate generated")
+                                                    .build());
+                }
 
                 LocalDateTime startDate = null;
                 LocalDateTime endDate = null;
@@ -218,15 +252,15 @@ public class CertificateServiceImpl implements CertificateService {
                                                         userId, targetId, "COMPLETED")
                                         .orElse(null);
 
-                        if (studentBatch != null) {
+                        if (studentBatch != null && studentBatch.getBatchId() != null) {
 
                                 var batch = batchRepository
                                                 .findById(studentBatch.getBatchId())
                                                 .orElse(null);
 
-                                Course course = courseRepository
+                                Course course = targetId != null ? courseRepository
                                                 .findById(targetId)
-                                                .orElse(null);
+                                                .orElse(null) : null;
 
                                 if (batch != null && course != null) {
 

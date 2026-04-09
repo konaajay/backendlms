@@ -11,7 +11,7 @@ import com.lms.www.service.AddressService;
 import com.lms.www.service.AdminService;
 
 @RestController
-@RequestMapping("/me")
+@RequestMapping("/api/me")
 public class ProfileController {
 
     private final AdminService adminService;

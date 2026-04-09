@@ -22,12 +22,11 @@ public class ReturnDamage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "item_id", insertable = false, updatable = false)
-    private Item item;
 
-    @Column(name = "item_id", nullable = false)
-    private Long itemId;
+
+    @com.fasterxml.jackson.annotation.JsonAlias({"itemId", "itemName"})
+    @Column(name = "item_id", nullable = false, length = 255)
+    private String itemId;
 
     @Column(name = "issued_ref_id")
     private Long issuedRefId;
@@ -38,12 +37,15 @@ public class ReturnDamage {
     @Column(name = "type", nullable = false)
     private String type; // RETURN / DAMAGE
 
+    @com.fasterxml.jackson.annotation.JsonAlias({"itemCondition", "condition"})
     @Column(name = "item_condition")
     private String itemCondition;
 
+    @com.fasterxml.jackson.annotation.JsonAlias({"actionRequired", "action"})
     @Column(name = "action_required")
     private String actionRequired;
 
+    @com.fasterxml.jackson.annotation.JsonAlias({"penaltyFee", "fee"})
     @Column(name = "penalty_fee")
     private Double penaltyFee;
 
@@ -55,10 +57,10 @@ public class ReturnDamage {
     private String status = "PENDING"; // PENDING / PROCESSED
 
     @Column(name = "returned_by")
-    private Long returnedBy;
+    private String returnedBy;
 
     @Column(name = "approved_by")
-    private Long approvedBy;
+    private String approvedBy;
 
     @Builder.Default
     @Column(name = "created_at", updatable = false)
@@ -71,11 +73,11 @@ public class ReturnDamage {
     }
 
     // Aliases for compatibility
-    public void setReportedBy(Long reportedBy) {
+    public void setReportedBy(String reportedBy) {
         this.returnedBy = reportedBy;
     }
 
-    public Long getReportedBy() {
+    public String getReportedBy() {
         return returnedBy;
     }
 

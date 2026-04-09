@@ -52,7 +52,7 @@ public class DigitalAssetController {
     @PreAuthorize("hasAnyAuthority('DIGITAL_ASSET_ASSIGN', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<DigitalAsset> assignLicense(
             @PathVariable Long id,
-            @PathVariable Long userId) {
+            @PathVariable String userId) {
 
         return ResponseEntity.ok(digitalAssetService.assignLicense(id, userId));
     }

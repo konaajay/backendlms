@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 
 import com.lms.www.campus.Library.BookReservation;
 
+@org.springframework.stereotype.Repository
 public interface BookReservationRepository extends JpaRepository<BookReservation, Long> {
 
 	@EntityGraph(attributePaths = { "book", "book.category", "book.barcodes" })

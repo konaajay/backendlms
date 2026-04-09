@@ -65,6 +65,16 @@ public class AdminController {
         return ResponseEntity.ok("Student created successfully");
     }
 
+    @PostMapping("/users/{userId}/convert-to-student")
+    public ResponseEntity<String> convertToStudent(
+            @PathVariable Long userId,
+            @RequestBody StudentRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        adminService.promoteLeadToStudent(userId, request, getLoggedInUser(), httpRequest);
+        return ResponseEntity.ok("User promoted to student successfully");
+    }
+
     @PostMapping("/instructors")
     public ResponseEntity<String> createInstructor(
             @RequestBody InstructorRequest request,
@@ -225,10 +235,10 @@ public class AdminController {
     @PatchMapping("/users/{userId}")
     public ResponseEntity<?> updateUser(
             @PathVariable Long userId,
-            @RequestBody User updatedUser,
+            @RequestBody Map<String, Object> payload,
             HttpServletRequest request
     ) {
-        adminService.updateUser(userId, updatedUser, getLoggedInUser(), request);
+        adminService.updateUser(userId, payload, getLoggedInUser(), request);
         return ResponseEntity.ok("User updated");
     }
     

@@ -21,7 +21,7 @@ import lombok.Setter;
 @Table(
     name = "commission_rules",
     indexes = {
-        @Index(name = "idx_course_rule", columnList = "courseId")
+        @Index(name = "idx_course_rule", columnList = "course_id")
     }
 )
 @Getter
@@ -35,21 +35,22 @@ public class CommissionRule {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "course_id", nullable = false)
     private Long courseId;
 
-    @Column(nullable = false, precision = 19, scale = 4)
+    @Column(name = "affiliate_percent", nullable = false, precision = 19, scale = 4)
     private BigDecimal affiliatePercent;
 
-    @Column(nullable = false, precision = 19, scale = 4)
+    @Column(name = "student_discount_percent", nullable = false, precision = 19, scale = 4)
     private BigDecimal studentDiscountPercent;
 
-    @Column(nullable = false)
+    @Column(name = "is_bonus", nullable = false)
     private boolean isBonus;
 
     @Column(nullable = false)
     private boolean active;
 
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @PrePersist

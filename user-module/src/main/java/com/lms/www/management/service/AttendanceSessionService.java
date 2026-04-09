@@ -37,6 +37,11 @@ public interface AttendanceSessionService {
     List<AttendanceSession> getActiveAndEndedBySessionId(Long sessionId);
 
     // ===============================
+    // BATCH BASED
+    // ===============================
+    List<AttendanceSession> getByBatch(Long batchId);
+
+    // ===============================
     // DELETE
     // ===============================
     void delete(Long attendanceSessionId);

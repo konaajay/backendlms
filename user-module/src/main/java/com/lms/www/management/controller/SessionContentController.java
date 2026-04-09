@@ -40,7 +40,7 @@ public class SessionContentController {
 
     // ================= CREATE METADATA =================
     @PostMapping("/session/{sessionId}")
-    @PreAuthorize("hasAuthority('SESSION_CONTENT_CREATE')")
+    @PreAuthorize("hasAnyAuthority('SESSION_CONTENT_CREATE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<SessionContent> createSessionContent(
             @PathVariable Long sessionId,
             @RequestBody SessionContent sessionContent) {
@@ -78,7 +78,7 @@ public class SessionContentController {
     	    value = "/{sessionContentId}/upload",
     	    consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     	)
-    	@PreAuthorize("hasAuthority('SESSION_CONTENT_UPDATE')")
+    	@PreAuthorize("hasAnyAuthority('SESSION_CONTENT_UPDATE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     	public ResponseEntity<SessionContent> uploadSessionContentFile(
     	        @PathVariable Long sessionContentId,
     	        @RequestParam("file") MultipartFile file) throws IOException {
@@ -116,7 +116,7 @@ public class SessionContentController {
     	}
     // ================= UPDATE METADATA =================
     @PutMapping("/{sessionContentId}")
-    @PreAuthorize("hasAuthority('SESSION_CONTENT_UPDATE')")
+    @PreAuthorize("hasAnyAuthority('SESSION_CONTENT_UPDATE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<SessionContent> updateSessionContent(
             @PathVariable Long sessionContentId,
             @RequestBody SessionContent updatedContent) {
@@ -129,7 +129,7 @@ public class SessionContentController {
 
     // ================= DELETE =================
     @DeleteMapping("/{sessionContentId}")
-    @PreAuthorize("hasAuthority('SESSION_CONTENT_DELETE')")
+    @PreAuthorize("hasAnyAuthority('SESSION_CONTENT_DELETE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
     public ResponseEntity<Void> deleteSessionContent(
             @PathVariable Long sessionContentId) {
 
@@ -138,7 +138,7 @@ public class SessionContentController {
     }
 
     // ================= PREVIEW =================
-    @GetMapping("/preview/{sessionContentId}")
+    @GetMapping("/{sessionContentId}/preview")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Resource> previewSessionContent(
             @PathVariable Long sessionContentId) throws IOException {
@@ -151,7 +151,11 @@ public class SessionContentController {
         }
 
         Path filePath = Paths.get(content.getFileUrl().substring(1));
-        Resource resource = new UrlResource(filePath.toUri());
+        java.net.URI fileUri = filePath.toUri();
+        if (fileUri == null) {
+            throw new IOException("Could not generate URI for file path");
+        }
+        Resource resource = new UrlResource(fileUri);
 
         if (!resource.exists()) {
             throw new ResourceNotFoundException("File not found");
@@ -169,7 +173,7 @@ public class SessionContentController {
     }
 
     // ================= DOWNLOAD =================
-    @GetMapping("/download/{sessionContentId}")
+    @GetMapping("/{sessionContentId}/download")
     @PreAuthorize("hasAuthority('SESSION_CONTENT_DOWNLOAD')")
     public ResponseEntity<Resource> downloadSessionContent(
             @PathVariable Long sessionContentId) throws IOException {
@@ -182,7 +186,11 @@ public class SessionContentController {
         }
 
         Path filePath = Paths.get(content.getFileUrl().substring(1));
-        Resource resource = new UrlResource(filePath.toUri());
+        java.net.URI fileUri = filePath.toUri();
+        if (fileUri == null) {
+            throw new IOException("Could not generate URI for file path");
+        }
+        Resource resource = new UrlResource(fileUri);
 
         if (!resource.exists()) {
             throw new ResourceNotFoundException("File not found");

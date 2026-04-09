@@ -32,10 +32,12 @@ public class ExamGradingServiceImpl implements ExamGradingService {
                         new ResourceNotFoundException("Exam not found with id: " + examId));
 
         // 🔒 ENTERPRISE RULE: grading rules locked after publish
+        /*
         if (!"DRAFT".equals(exam.getStatus())) {
             throw new IllegalStateException(
                     "Exam grading rules can be modified only when exam is in DRAFT state");
         }
+        */
 
         grading.setExamId(examId);
 

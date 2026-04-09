@@ -25,12 +25,27 @@ public class WebinarChatMessageController {
     private final WebinarChatMessageService chatMessageService;
 
     // =========================================================
-    // 💬 SEND CHAT MESSAGE
+    // 💬 SEND CHAT MESSAGE (Old)
     // =========================================================
     @PostMapping("/send")
     @PreAuthorize("hasAuthority('WEBINAR_CHAT_SEND')")
     public ResponseEntity<WebinarChatMessage> sendChatMessage(@RequestBody Map<String, Object> payload) {
+        return processMessage(payload);
+    }
 
+    // =========================================================
+    // 💬 SEND CHAT MESSAGE (New - matches Doc/FE)
+    // =========================================================
+    @PostMapping("/webinar/{webinarId}")
+    @PreAuthorize("hasAuthority('WEBINAR_CHAT_SEND')")
+    public ResponseEntity<WebinarChatMessage> sendChatMessageByWebinar(
+            @PathVariable Long webinarId,
+            @RequestBody Map<String, Object> payload) {
+        payload.put("webinarId", webinarId);
+        return processMessage(payload);
+    }
+
+    private ResponseEntity<WebinarChatMessage> processMessage(Map<String, Object> payload) {
         Long webinarId = Long.valueOf(payload.get("webinarId").toString());
         Long senderId = Long.valueOf(payload.get("senderId").toString());
         String senderName = (String) payload.get("senderName");

@@ -65,7 +65,15 @@ public class ExamScheduleServiceImpl implements ExamScheduleService {
         }
 
         schedule.setIsActive(true);
-        return scheduleRepository.save(schedule);
+        ExamSchedule savedSchedule = scheduleRepository.save(schedule);
+
+        // Update Exam status to SCHEDULED
+        examRepository.findById(schedule.getExamId()).ifPresent(exam -> {
+            exam.setStatus("SCHEDULED");
+            examRepository.save(exam);
+        });
+
+        return savedSchedule;
     }
 
     @Override

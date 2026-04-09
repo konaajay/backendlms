@@ -35,8 +35,12 @@ public class AttendanceDashboardServiceImpl {
         AttendanceConfig config =
                 attendanceConfigRepository
                         .findByCourseIdAndBatchId(courseId, batchId)
-                        .orElseThrow(() ->
-                                new IllegalStateException("Attendance config not found"));
+                        .orElseGet(() -> {
+                            AttendanceConfig defaultCfg = new AttendanceConfig();
+                            defaultCfg.setExamEligibilityPercent(80);
+                            defaultCfg.setAtRiskPercent(75);
+                            return defaultCfg;
+                        });
 
         // 1. Get all students in batch
         List<Long> studentIds =

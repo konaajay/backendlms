@@ -35,14 +35,23 @@ public class StructureServiceImpl implements StructureService {
     @Override
     public FeeStructureResponse createStructure(FeeStructureRequest request) {
         log.info("Creating fee structure: {}", request.getName());
+        
         FeeStructure structure = new FeeStructure();
         structure.setName(request.getName());
         structure.setAcademicYear(request.getAcademicYear());
-        structure.setCourseId(request.getCourseId());
+        
+        Long courseId = request.getCourseId();
+        if (courseId == null && request.getBatchId() != null) {
+            courseId = batchRepository.findById(request.getBatchId())
+                    .map(b -> b.getCourseId())
+                    .orElse(null);
+        }
+        structure.setCourseId(courseId);
         structure.setBatchId(request.getBatchId());
+        
+        structure.setDurationMonths(request.getDurationMonths());
         structure.setBaseAmount(request.getBaseAmount());
         structure.setTotalAmount(request.getTotalAmount());
-        structure.setDurationMonths(request.getDurationMonths());
         structure.setInstallmentCount(request.getInstallmentCount());
         structure.setGstApplicable(request.getGstApplicable());
         structure.setGstPercent(request.getGstPercent());

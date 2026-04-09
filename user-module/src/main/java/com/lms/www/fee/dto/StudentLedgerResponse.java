@@ -29,6 +29,8 @@ public class StudentLedgerResponse {
     public static class AllocationSummary {
         private Long allocationId;
         private Long feeStructureId;
+        private Long courseId;
+        private Long batchId;
         private String feeStructureName;
         private String feeTypeName;
         private String studentName;

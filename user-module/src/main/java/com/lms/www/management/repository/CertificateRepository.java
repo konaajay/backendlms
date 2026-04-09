@@ -22,6 +22,12 @@ public interface CertificateRepository extends JpaRepository<Certificate, Long> 
             Long targetId
     );
 
+    Optional<Certificate> findByUserIdAndTargetTypeAndTargetId(
+            Long userId,
+            TargetType targetType,
+            Long targetId
+    );
+
     // Get all certificates of a user
     List<Certificate> findByUserId(Long userId);
 

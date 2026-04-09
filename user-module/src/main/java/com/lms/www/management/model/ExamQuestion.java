@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Table(name = "exam_question")
@@ -15,6 +17,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ExamQuestion {
 
     @Id
@@ -32,6 +35,7 @@ public class ExamQuestion {
     private Long examSectionId;
 
     @Column(name = "question_id", nullable = false)
+    @JsonProperty("question_id")
     private Long questionId;
 
     @Column(name = "marks")

@@ -30,6 +30,12 @@ public class TrackedLinkService {
     private LeadRepository leadRepository;
 
     public TrackedLink saveLink(TrackedLink link) {
+        if (link.getTrackedLinkId() == null || link.getTrackedLinkId().isEmpty()) {
+            link.setTrackedLinkId(java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        }
+        if (link.getTimestamp() == null) {
+            link.setTimestamp(java.time.LocalDateTime.now());
+        }
         return repository.save(link);
     }
 

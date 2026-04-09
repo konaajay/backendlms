@@ -42,10 +42,13 @@ public class InstructorBatchServiceImpl implements InstructorBatchService {
     }
 
     private void validateBatchOwnership(Long instructorId, Long batchId) {
+        if (instructorId == null) {
+            throw new AccessDeniedException("User identity not found. Please log in again.");
+        }
         Batch batch = batchRepository.findById(batchId)
                 .orElseThrow(() -> new ResourceNotFoundException("Batch not found"));
 
-        if (!instructorId.equals(batch.getTrainerId())) {
+        if (!java.util.Objects.equals(instructorId, batch.getTrainerId())) {
             throw new AccessDeniedException("Unauthorized to access this batch");
         }
     }
@@ -56,9 +59,9 @@ public class InstructorBatchServiceImpl implements InstructorBatchService {
 
         String courseName = null;
         if (batch.getCourseId() != null) {
-             courseName = courseRepository.findById(batch.getCourseId())
-                                          .map(Course::getCourseName)
-                                          .orElse(null);
+            courseName = courseRepository.findById(batch.getCourseId())
+                    .map(Course::getCourseName)
+                    .orElse(null);
         }
 
         return InstructorBatchDTO.builder()
@@ -68,6 +71,7 @@ public class InstructorBatchServiceImpl implements InstructorBatchService {
                 .endDate(batch.getEndDate())
                 .studentsCount((int) studentsCount)
                 .courseName(courseName)
+                .courseId(batch.getCourseId())
                 .build();
     }
 

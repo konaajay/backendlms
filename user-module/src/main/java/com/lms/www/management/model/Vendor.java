@@ -28,7 +28,7 @@ public class Vendor {
     private String vendorCode;
 
     @JsonProperty("companyName")
-    @JsonAlias({"name"})
+    @JsonAlias({"name", "vendorName"})
     @Column(name = "vendor_name", nullable = false)
     private String vendorName;
 
@@ -36,6 +36,7 @@ public class Vendor {
     private String contactPerson;
 
     @JsonProperty("phone")
+    @JsonAlias({"phoneNumber"})
     @Column(name = "phone_number")
     private String phoneNumber;
 

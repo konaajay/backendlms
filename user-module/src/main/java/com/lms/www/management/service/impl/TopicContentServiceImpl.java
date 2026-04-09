@@ -44,6 +44,11 @@ public class TopicContentServiceImpl implements TopicContentService {
             content.setContentSource("UPLOAD");
         }
 
+        if (content.getContentOrder() == null) {
+            long count = topicContentRepository.countByTopicTopicId(topicId);
+            content.setContentOrder((int) count + 1);
+        }
+
         return topicContentRepository.save(content);
     }
 
@@ -73,6 +78,12 @@ public class TopicContentServiceImpl implements TopicContentService {
                 content.setContentSource("URL");
             } else {
                 content.setContentSource("UPLOAD");
+            }
+
+            if (content.getContentOrder() == null) {
+                // For bulk, we need to consider both DB and what we just added to the loop
+                long dbCount = topicContentRepository.countByTopicTopicId(topicId);
+                content.setContentOrder((int) dbCount + (saved.size() + 1));
             }
 
             saved.add(topicContentRepository.save(content));

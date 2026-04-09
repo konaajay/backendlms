@@ -111,6 +111,19 @@ public class AttendanceSessionController {
     // ===============================
     // DELETE
     // ===============================
+    // ===============================
+    // GET BY BATCH
+    // ===============================
+    @GetMapping("/batch/{batchId}")
+    @PreAuthorize("hasAuthority('ATTENDANCE_SESSION_VIEW') or hasAuthority('ROLE_INSTRUCTOR') or hasAuthority('ALL_PERMISSIONS')")
+    public ResponseEntity<List<AttendanceSession>> getByBatch(
+            @PathVariable Long batchId
+    ) {
+        return ResponseEntity.ok(
+                attendanceSessionService.getByBatch(batchId)
+        );
+    }
+
     @DeleteMapping("/{attendanceSessionId}")
     @PreAuthorize("hasAuthority('ATTENDANCE_SESSION_DELETE') or hasAuthority('ROLE_INSTRUCTOR') or hasAuthority('ALL_PERMISSIONS')")
     public ResponseEntity<Void> deleteAttendanceSession(

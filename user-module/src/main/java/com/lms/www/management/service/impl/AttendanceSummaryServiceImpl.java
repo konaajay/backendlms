@@ -34,14 +34,17 @@ public class AttendanceSummaryServiceImpl
                         Long courseId,
                         Long batchId) {
 
-                // 1️⃣ Fetch attendance records (RAW DATA)
-                List<AttendanceRecord> records = attendanceRecordRepository.findByStudentId(studentId);
+                // 1️⃣ Fetch attendance records (RAW DATA filtered by batch)
+                List<AttendanceRecord> records = attendanceRecordRepository.findByStudentIdAndBatchId(studentId, batchId);
 
                 // 2️⃣ Fetch config (THRESHOLDS)
                 AttendanceConfig config = attendanceConfigRepository
                                 .findByCourseIdAndBatchId(courseId, batchId)
-                                .orElseThrow(() -> new IllegalStateException(
-                                                "Attendance config not found"));
+                                .orElse(null);
+
+                // Default thresholds if config missing
+                int atRiskThreshold = config != null ? config.getAtRiskPercent() : 75;
+                int eligibilityThreshold = config != null ? config.getExamEligibilityPercent() : 80;
 
                 long totalSessions = 0;
                 long presentCount = 0;
@@ -71,9 +74,9 @@ public class AttendanceSummaryServiceImpl
                                 ? 0
                                 : (int) ((presentCount * 100) / totalSessions);
 
-                boolean atRisk = attendancePercentage < config.getAtRiskPercent();
+                boolean atRisk = attendancePercentage < atRiskThreshold;
 
-                boolean examEligible = attendancePercentage >= config.getExamEligibilityPercent();
+                boolean examEligible = attendancePercentage >= eligibilityThreshold;
 
                 // 3️⃣ Response
                 Map<String, Object> response = new HashMap<>();

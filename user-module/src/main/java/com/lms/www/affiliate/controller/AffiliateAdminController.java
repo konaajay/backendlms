@@ -135,6 +135,14 @@ public class AffiliateAdminController {
         return ResponseEntity.ok(leadService.convertToStudent(id, request));
     }
 
+    @PutMapping("/leads/{id}")
+    @PreAuthorize("hasAuthority('AFFILIATE_LEAD_UPDATE') or hasAuthority('ALL_PERMISSIONS')")
+    public ResponseEntity<AffiliateLeadDTO> updateLead(
+            @PathVariable Long id,
+            @RequestBody AffiliateLeadDTO request) {
+        return ResponseEntity.ok(leadService.updateLead(id, request));
+    }
+
     @GetMapping("/leads/{id}/notes")
     @PreAuthorize("hasAuthority('AFFILIATE_LEAD_VIEW') or hasAuthority('ALL_PERMISSIONS')")
     public ResponseEntity<List<LeadNoteDTO>> getNotes(@PathVariable Long id) {

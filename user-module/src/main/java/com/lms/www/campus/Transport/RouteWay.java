@@ -48,7 +48,7 @@ public class RouteWay {
     @Column(name = "estimated_time_minutes")
     private Integer estimatedTimeMinutes;
     
-    @OneToMany(mappedBy = "route", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "route", fetch = FetchType.LAZY)
     @JsonIgnore
     private List<Vehicle> vehicles = new ArrayList<>();
 

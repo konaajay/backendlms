@@ -32,7 +32,10 @@ public class JwtUtil {
             String email,
             List<String> roles,
             List<String> permissions,
-            String tenantDb
+            String tenantDb,
+            boolean isEnrolled,
+            Long driverId,
+            Long parentId
     ) {
         return Jwts.builder()
                 .setSubject(email)
@@ -40,8 +43,10 @@ public class JwtUtil {
                 .claim("roles", roles)
                 .claim("permissions", permissions)
                 .claim("tenantDb", tenantDb)
+                .claim("isEnrolled", isEnrolled)
+                .claim("driverId", driverId)
+                .claim("parentId", parentId)
                 .setIssuedAt(new Date())
-                // ❌ NO expiration
                 .signWith(key)
                 .compact();
     }

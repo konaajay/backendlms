@@ -40,8 +40,8 @@ public class SecurityConfig {
             	    // 3️⃣ ALL PLATFORM APIs
                     .requestMatchers("/platform/**").permitAll()
                     
-                     // 4️⃣ PUBLIC AUTH APIs
-                    .requestMatchers("/auth/**").permitAll()
+                    // 4️⃣ PUBLIC AUTH APIs
+                    .requestMatchers("/api/auth/**", "/auth/**").permitAll()
             	    // 🔓 PUBLIC
             	    .requestMatchers("/auth/login").permitAll()
             	    .requestMatchers("/auth/logout").permitAll()
@@ -63,24 +63,27 @@ public class SecurityConfig {
             	    .requestMatchers("/website/**")
             	    .authenticated()
 
-            	    // 🔐 ADMIN
+            	    // 🔐 ADMIN LISTS (Allowed for Instructors too for selection)
+            	    .requestMatchers("/admin/getinstructors", "/admin/getstudents", "/admin/users", "/admin/users/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPER_ADMIN", "ROLE_INSTRUCTOR", "ROLE_LIBRARIAN", "ALL_PERMISSIONS")
+            	    
+            	    // 🔐 ADMIN (Strict)
             	    .requestMatchers("/admin/**")
-            	    .hasAnyAuthority("ROLE_ADMIN","ROLE_SUPER_ADMIN")
+            	    .hasAnyAuthority("ROLE_ADMIN","ROLE_SUPER_ADMIN", "ALL_PERMISSIONS", "ROLE_INSTRUCTOR")
 
-            	    // 🔐 STUDENT
-            	    .requestMatchers("/student/**").hasAuthority("ROLE_STUDENT")
+            	    // 🔐 STUDENT & AFFILIATE (Cross-access for affiliate portal)
+            	    .requestMatchers("/student/**", "/api/v1/student/**").hasAnyAuthority("ROLE_STUDENT", "ROLE_AFFILIATE")
 
             	    // 🔐 INSTRUCTOR
-            	    .requestMatchers("/instructor/**").hasAuthority("ROLE_INSTRUCTOR")
+            	    .requestMatchers("/api/instructor/**", "/instructor/**").hasAnyAuthority("ROLE_INSTRUCTOR", "ROLE_ADMIN", "ROLE_SUPER_ADMIN")
 
             	    // 🔐 PARENT
-            	    .requestMatchers("/parent/**").hasAuthority("ROLE_PARENT")
+            	    .requestMatchers("/api/parent/**", "/parent/**").hasAnyAuthority("ROLE_PARENT", "ALL_PERMISSIONS")
             	    
-            	     // 🔐 PARENT
-            	    .requestMatchers("/driver/**").hasAuthority("ROLE_DRIVER")
+            	     // 🔐 DRIVER
+            	    .requestMatchers("/api/driver/**", "/driver/**").hasAnyAuthority("ROLE_DRIVER", "ALL_PERMISSIONS")
             	    
-            	     // 🔐 PARENT
-            	    .requestMatchers("/conductor/**").hasAuthority("ROLE_CONDUCTOR")
+            	     // 🔐 CONDUCTOR
+            	    .requestMatchers("/api/conductor/**", "/conductor/**").hasAnyAuthority("ROLE_CONDUCTOR", "ALL_PERMISSIONS")
             	    
             	    // 🔐 ACCOUNTANT
             	    .requestMatchers("/accountant/**").hasAuthority("ROLE_ACCOUNTANT")
@@ -100,8 +103,8 @@ public class SecurityConfig {
             	    // 🔐 INVENTORY MANAGER
             	    .requestMatchers("/inventory-manager/**").hasAuthority("ROLE_INVENTORY_MANAGER")
             	    
-            	    // 🔐 LIBRARIAN
-            	    .requestMatchers("/librarian/**").hasAuthority("ROLE_LIBRARIAN")
+            	    // 🔐 LIBRARIAN & LIBRARY MODULE
+            	    .requestMatchers("/librarian/**", "/api/v1/library/**").hasAnyAuthority("ROLE_LIBRARIAN", "ROLE_ADMIN", "ROLE_SUPER_ADMIN", "ROLE_STUDENT")
             	    
             	    // 🔐 MARKETING MANAGER
             	    .requestMatchers("/marketing-manager/**").hasAuthority("ROLE_MARKETING_MANAGER")
@@ -115,27 +118,29 @@ public class SecurityConfig {
             	    // 🔐 WARDEN
             	    .requestMatchers("/warden/**").hasAuthority("ROLE_WARDEN")
             	    
-            	                 	    .requestMatchers(HttpMethod.POST, "/api/leads").permitAll()
-             	    .requestMatchers("/api/v1/public/affiliates/**").permitAll()
+            	                 	    .requestMatchers(HttpMethod.POST, "/api/leads", "/api/webinar-registrations/external", "/api/external-participants").permitAll()
+              	    .requestMatchers("/api/v1/public/affiliates/**", "/api/marketing/coupons/public/**", "/api/v1/marketing/public/**").permitAll()
 
 
             	    // 🔐 SELF
-            	    .requestMatchers("/me/**").authenticated()
+            	    .requestMatchers("/api/me/**", "/me/**").authenticated()
             	    
-             	    // 🔐 AFFILIATE & MARKETING ADMIN
-             	    .requestMatchers("/api/v1/marketing/admin/**", "/api/v1/admin/affiliates/**")
-             	    .hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPER_ADMIN", "ALL_PERMISSIONS")
+              	    // 🔐 AFFILIATE & MARKETING ADMIN
+              	    .requestMatchers("/api/v1/marketing/admin/**", "/api/v1/admin/affiliates/**", "/api/v1/affiliate/**", "/api/v1/admin/**", "/api/student-batches/**", "/api/student-batch-transfers/**")
+              	    .hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPER_ADMIN", "ALL_PERMISSIONS", "ROLE_MARKETING_MANAGER", "ROLE_AFFILIATE", "ROLE_INSTRUCTOR")
 
-             	    // 🔐 PUBLIC ACCESSIBLE
-             	    .requestMatchers(HttpMethod.GET, "/api/v1/settings/**", "/api/courses", "/api/v1/courses/**", "/api/v1/fee-management/batches/course/**").permitAll()
-             	    .requestMatchers("/api/v1/settings/**")
-             	    .hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPER_ADMIN")
+              	    // 🔐 PUBLIC ACCESSIBLE
+              	    .requestMatchers(HttpMethod.GET, "/api/v1/settings/**", "/api/courses/**", "/api/v1/courses/**", "/api/v1/fee-management/batches/course/**", "/api/webinars/**", "/api/certificates/public/**", "/api/v1/fee/payments/public/**").permitAll()
+              	    .requestMatchers(HttpMethod.GET, "/api/webinars").permitAll()
+              	    .requestMatchers("/api/v1/settings/**")
+              	    .hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPER_ADMIN")
 
-             	    // 🔐 CAMPUS & HOSTEL
-             	    .requestMatchers("/campus/**")
-             	    .hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPER_ADMIN", "ROLE_WARDEN")
+              	    // 🔐 CAMPUS & HOSTEL
+              	    .requestMatchers("/campus/**")
+              	    .hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPER_ADMIN", "ROLE_WARDEN")
 
-                    // 🔐 INVENTORY MODULE
+                    .requestMatchers("/api/v1/fee-management/webhooks/**").permitAll()
+
                     .requestMatchers(
                         "/api/items/**", 
                         "/api/vendors/**", 
@@ -148,12 +153,31 @@ public class SecurityConfig {
                         "/api/stock-outward/**"
                     ).hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPER_ADMIN", "ROLE_INVENTORY_MANAGER")
 
+                    // 🔐 EXAM MODULE
+                    .requestMatchers(
+                        "/api/exams/**",
+                        "/api/exam-attempts/**",
+                        "/api/exam-sections/**",
+                        "/api/questions/**",
+                        "/api/sections/**",
+                        "/api/exam-schedules/**",
+                        "/api/exam-responses/**"
+                    ).hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPER_ADMIN", "ROLE_INSTRUCTOR", "ALL_PERMISSIONS", "ROLE_STUDENT")
+
                     // 🔐 MANAGEMENT MODULE (Inventory, Attendance, Certificates, Sessions, Exams)
                     .requestMatchers("/api/management/**")
-                    .hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPER_ADMIN", "ROLE_INVENTORY_MANAGER", "ROLE_INSTRUCTOR")
+                    .hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPER_ADMIN", "ROLE_INVENTORY_MANAGER", "ROLE_INSTRUCTOR", "ROLE_STUDENT")
 
                     .requestMatchers("/api/v1/fee-management/**")
                     .hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPER_ADMIN", "ROLE_ACCOUNTANT", "ROLE_STUDENT", "ROLE_PARENT", "ALL_PERMISSIONS")
+
+                    // 🔐 WEBINAR MODULE (Full Access for Staff)
+                    .requestMatchers("/api/webinars/**", "/api/webinar-registrations/**")
+                    .hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPER_ADMIN", "ROLE_INSTRUCTOR", "ROLE_STUDENT")
+
+                    // 🔐 SESSION CONTENT (Management)
+                    .requestMatchers("/api/session-contents/**")
+                    .hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPER_ADMIN", "ROLE_INSTRUCTOR", "ROLE_STUDENT")
 
                     .anyRequest().authenticated()
             	)

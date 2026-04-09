@@ -298,6 +298,24 @@ public class AffiliateLeadServiceImpl implements AffiliateLeadService {
 
     @Override
     @Transactional
+    public AffiliateLeadDTO updateLead(Long leadId, AffiliateLeadDTO request) {
+        AffiliateLead lead = leadRepository.findById(leadId)
+                .orElseThrow(() -> new RuntimeException("Lead not found: " + leadId));
+
+        lead.setName(request.getName());
+        lead.setEmail(request.getEmail());
+        lead.setMobile(request.getMobile());
+        
+        if (request.getStatus() != null) {
+            lead.setStatus(AffiliateLead.LeadStatus.valueOf(request.getStatus()));
+        }
+
+        AffiliateLead saved = leadRepository.save(lead);
+        return mapToDTO(saved);
+    }
+    
+    @Override
+    @Transactional
     public AffiliateLeadDTO convertToStudent(Long leadId, HttpServletRequest httpRequest) {
         AffiliateLead lead = leadRepository.findById(leadId)
                 .orElseThrow(() -> new RuntimeException("Lead not found: " + leadId));

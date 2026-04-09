@@ -106,9 +106,9 @@ public class WebinarServiceImpl implements WebinarService {
             throw new IllegalArgumentException("maxParticipants must be greater than 0.");
         }
 
-        // Rule 2 - Scheduling Validation
-        if (webinar.getStartTime() == null || webinar.getStartTime().isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("startTime must be in the future.");
+        // Rule 2 - Scheduling Validation (Allowing a 5-minute grace period for clock drift/latency)
+        if (webinar.getStartTime() == null || webinar.getStartTime().isBefore(LocalDateTime.now().minusMinutes(5))) {
+            throw new IllegalArgumentException("startTime must be in the future (or at most 5 minutes in the past due to clock drift).");
         }
 
         // Rule 3 - Webinar Mode Validation

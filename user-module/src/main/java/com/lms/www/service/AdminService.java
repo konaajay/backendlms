@@ -95,7 +95,7 @@ public interface AdminService {
     TransportManager getTransportManagerByTransportManagerId(Long transportManagerId);
     Warden getWardenByWardenId(Long wardenId);
     
-    void updateUser(Long userId, User updatedUser, User admin, HttpServletRequest request);
+    void updateUser(Long userId, java.util.Map<String, Object> payload, User admin, HttpServletRequest request);
     void deleteUser(Long userId, User admin, HttpServletRequest request);
 
     void mapParentToStudent(
@@ -135,4 +135,5 @@ public interface AdminService {
             HttpServletRequest request
     );
 
+    void promoteLeadToStudent(Long userId, StudentRequest request, User admin, HttpServletRequest httpRequest);
 }

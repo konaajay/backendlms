@@ -94,6 +94,15 @@ public class StudentExamController {
         return ResponseEntity.ok(ApiResponse.success(studentExamService.submitExamAttempt(examId, studentId)));
     }
 
+    @GetMapping("/{examId}/attempts/{attemptId}/result")
+    @PreAuthorize("hasAuthority('EXAM_ATTEMPT_VIEW')")
+    public ResponseEntity<ApiResponse<StudentExamAttemptResultDTO>> getSpecificAttemptResult(
+            @PathVariable Long examId,
+            @PathVariable Long attemptId) {
+        Long studentId = securityUtil.getUserId();
+        return ResponseEntity.ok(ApiResponse.success(studentExamService.getSpecificAttemptResult(examId, attemptId, studentId)));
+    }
+
     // =========================
     // VIEW ATTEMPTS
     // =========================

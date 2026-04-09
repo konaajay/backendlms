@@ -17,4 +17,6 @@ public interface StudentBatchService {
     void removeStudent(Long studentBatchId);
     
     int bulkEnroll(Long courseId, Long batchId, List<StudentBatch> students);
+    
+    List<StudentBatch> getAllEnrollments();
 }

@@ -66,7 +66,8 @@ public interface AttendanceRecordService {
     
     List<StudentAttendanceStatus> getDashboardAttendanceStatus(
     	    Long courseId,
-    	    Long batchId
+    	    Long batchId,
+            Long sessionId
     	);
     
     boolean isStudentAtRiskByAbsence(
@@ -74,5 +75,6 @@ public interface AttendanceRecordService {
             Long courseId,
             Long batchId
     );
-    
+
+    List<AttendanceRecord> getByBatch(Long batchId);
 }

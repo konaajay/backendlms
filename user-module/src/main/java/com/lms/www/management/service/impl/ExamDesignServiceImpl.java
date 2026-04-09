@@ -40,9 +40,11 @@ public class ExamDesignServiceImpl implements ExamDesignService {
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new IllegalStateException("Exam not found"));
 
+        /*
         if (!"DRAFT".equals(exam.getStatus())) {
             throw new IllegalStateException("Design can be changed only in DRAFT");
         }
+        */
 
         ExamDesign design = examDesignRepository
                 .findByExamId(examId)

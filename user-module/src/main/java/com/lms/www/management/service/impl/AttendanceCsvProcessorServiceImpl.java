@@ -67,37 +67,38 @@ public class AttendanceCsvProcessorServiceImpl
     // CSV PROCESSING
     // ===============================
     private void processCsv(File file, AttendanceUploadJob job) throws Exception {
+        java.util.List<AttendanceRecord> recordsToSave = new java.util.ArrayList<>();
+        java.util.Set<Long> enrolledStudentIds = getEnrolledStudentIds(job.getBatchId());
 
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-
             String line;
             boolean skipHeader = true;
 
             while ((line = br.readLine()) != null) {
-
                 if (skipHeader) {
                     skipHeader = false;
                     continue;
                 }
-
-                if (line.trim().isEmpty())
-                    continue;
+                if (line.trim().isEmpty()) continue;
 
                 String[] data = line.split(",");
-
-                if (data.length < 2)
-                    continue;
+                if (data.length < 2) continue;
 
                 String studentIdStr = data[0].trim();
                 String status = data[1].trim();
                 String remarks = data.length > 2 ? data[2].trim() : null;
 
                 Long studentId = parseStudentId(studentIdStr);
-                if (studentId == null || status == null)
+                if (studentId == null || status == null || !enrolledStudentIds.contains(studentId)) {
                     continue;
+                }
 
-                saveRecord(job, studentId, status, remarks);
+                recordsToSave.add(createRecord(job, studentId, status, remarks));
             }
+        }
+
+        if (!recordsToSave.isEmpty()) {
+            attendanceRecordRepository.saveAll(recordsToSave);
         }
     }
 
@@ -105,30 +106,51 @@ public class AttendanceCsvProcessorServiceImpl
     // EXCEL PROCESSING
     // ===============================
     private void processExcel(File file, AttendanceUploadJob job) throws Exception {
+        java.util.List<AttendanceRecord> recordsToSave = new java.util.ArrayList<>();
+        java.util.Set<Long> enrolledStudentIds = getEnrolledStudentIds(job.getBatchId());
 
         try (FileInputStream fis = new FileInputStream(file);
-                Workbook workbook = new XSSFWorkbook(fis)) {
+                Workbook workbook = WorkbookFactory.create(fis)) {
 
             Sheet sheet = workbook.getSheetAt(0);
-
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-
                 Row row = sheet.getRow(i);
-                if (row == null)
-                    continue;
+                if (row == null) continue;
 
                 String studentIdStr = getCellValue(row.getCell(0));
                 String status = getCellValue(row.getCell(1));
                 String remarks = getCellValue(row.getCell(2));
 
                 Long studentId = parseStudentId(studentIdStr);
-
-                if (studentId == null || status == null)
+                if (studentId == null || status == null || !enrolledStudentIds.contains(studentId)) {
                     continue;
+                }
 
-                saveRecord(job, studentId, status, remarks);
+                recordsToSave.add(createRecord(job, studentId, status, remarks));
             }
         }
+
+        if (!recordsToSave.isEmpty()) {
+            attendanceRecordRepository.saveAll(recordsToSave);
+        }
+    }
+
+    private java.util.Set<Long> getEnrolledStudentIds(Long batchId) {
+        return new java.util.HashSet<>(studentBatchRepository.findStudentIdsByBatchId(batchId));
+    }
+
+    private AttendanceRecord createRecord(AttendanceUploadJob job, Long studentId, String status, String remarks) {
+        AttendanceRecord record = new AttendanceRecord();
+        record.setAttendanceSessionId(job.getSessionId());
+        record.setBatchId(job.getBatchId()); // Ensure batchId is set
+        record.setStudentId(studentId);
+        record.setStatus(status.toUpperCase());
+        record.setRemarks(remarks);
+        record.setMarkedBy(job.getUploadedBy() != null ? job.getUploadedBy() : 1L);
+        record.setMarkedAt(LocalDateTime.now());
+        record.setAttendanceDate(job.getAttendanceDate());
+        record.setSource("FILE");
+        return record;
     }
 
     // ===============================
@@ -165,35 +187,5 @@ public class AttendanceCsvProcessorServiceImpl
         } catch (Exception e) {
             return null;
         }
-    }
-
-    // ===============================
-    // SAVE LOGIC
-    // ===============================
-    private void saveRecord(
-            AttendanceUploadJob job,
-            Long studentId,
-            String status,
-            String remarks) {
-
-        boolean enrolled = studentBatchRepository.existsByStudentIdAndBatchIdAndStatus(
-                studentId,
-                job.getBatchId(),
-                "ACTIVE");
-
-        if (!enrolled)
-            return;
-
-        AttendanceRecord record = new AttendanceRecord();
-        record.setAttendanceSessionId(job.getSessionId());
-        record.setStudentId(studentId);
-        record.setStatus(status);
-        record.setRemarks(remarks);
-        record.setMarkedBy(job.getUploadedBy());
-        record.setMarkedAt(LocalDateTime.now());
-        record.setAttendanceDate(job.getAttendanceDate());
-        record.setSource("FILE");
-
-        attendanceRecordRepository.save(record);
     }
 }

@@ -1,6 +1,5 @@
 package com.lms.www.marketing.controller;
 
-import java.util.List;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,8 +31,8 @@ public class AdminTrackedLinkController {
     // ===== VIEW =====
     @GetMapping
     @PreAuthorize("hasAuthority('MARKETING_TRACKED_LINK_VIEW') or hasAuthority('ALL_PERMISSIONS')")
-    public ResponseEntity<List<TrackedLink>> getAllLinks() {
-        return ResponseEntity.ok(service.getAllLinks());
+    public ResponseEntity<?> getAllLinks() {
+        return ResponseEntity.ok(service.getAllLinksWithAnalytics());
     }
 
     // ===== DELETE =====

@@ -37,8 +37,9 @@ public class CertificateTemplate {
     @Column(name = "template_type")
     private String templateType; // Restoration
 
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
     @Column(name = "target_type")
-    private String targetType; // Restoration
+    private TargetType targetType; // Changed from String to Enum to match Repository signature
 
     @Column(name = "target_id")
     private Long targetId; // Restoration
@@ -103,12 +104,14 @@ public class CertificateTemplate {
     // Custom Builder to handle TargetType enum
     public static class CertificateTemplateBuilder {
         public CertificateTemplateBuilder targetType(TargetType targetType) {
-            this.targetType = targetType != null ? targetType.name() : null;
+            this.targetType = targetType;
             return this;
         }
         
         public CertificateTemplateBuilder targetType(String targetType) {
-            this.targetType = targetType;
+            if (targetType != null) {
+                this.targetType = TargetType.valueOf(targetType.toUpperCase());
+            }
             return this;
         }
     }

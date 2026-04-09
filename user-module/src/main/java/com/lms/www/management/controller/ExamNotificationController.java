@@ -20,7 +20,7 @@ public class ExamNotificationController {
 
     // Create / update notification config
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('EXAM_NOTIFICATION_UPDATE', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @PreAuthorize("hasAnyAuthority('EXAM_NOTIFICATION_UPDATE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<ExamNotification> saveNotification(
             @PathVariable Long examId,
             @RequestBody ExamNotification notification) {
@@ -32,7 +32,7 @@ public class ExamNotificationController {
 
     // Get notification config
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('EXAM_NOTIFICATION_VIEW', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @PreAuthorize("hasAnyAuthority('EXAM_NOTIFICATION_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<ExamNotification> getNotification(
             @PathVariable Long examId) {
 

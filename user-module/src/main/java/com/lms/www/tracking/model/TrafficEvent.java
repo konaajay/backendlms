@@ -12,7 +12,9 @@ import com.lms.www.marketing.model.TrackedLink;
         @Index(name = "idx_traffic_session", columnList = "session_id"),
         @Index(name = "idx_traffic_user", columnList = "user_id"),
         @Index(name = "idx_traffic_event", columnList = "event_type"),
-        @Index(name = "idx_tid_type", columnList = "tracked_link_id, event_type")
+        @Index(name = "idx_tid_type", columnList = "tracked_link_id, event_type"),
+        @Index(name = "idx_utm_source", columnList = "utm_source"),
+        @Index(name = "idx_utm_campaign", columnList = "utm_campaign")
 })
 @Data
 @NoArgsConstructor
@@ -50,8 +52,8 @@ public class TrafficEvent {
 
     private String page;
 
-    @Column(columnDefinition = "TEXT")
-    private String metadataJSON;
+    @Column(name = "metadata_json", columnDefinition = "TEXT")
+    private String metadataJson;
 
     private LocalDateTime timestamp;
 
@@ -75,6 +77,6 @@ public class TrafficEvent {
     public TrackedLink getTrackedLink() { return trackedLink; }
     public void setTrackedLink(TrackedLink trackedLink) { this.trackedLink = trackedLink; }
 
-    public String getMetadataJSON() { return metadataJSON; }
-    public void setMetadataJSON(String metadataJSON) { this.metadataJSON = metadataJSON; }
+    public String getMetadataJson() { return metadataJson; }
+    public void setMetadataJson(String metadataJson) { this.metadataJson = metadataJson; }
 }

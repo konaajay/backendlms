@@ -92,7 +92,6 @@ public class CourseController {
     // GET ALL COURSES
     // ===============================
     @GetMapping
-    @PreAuthorize("isAuthenticated()")
     public List<Course> getAllCourses() {
         return courseService.getAllCourses();
     }
@@ -101,7 +100,6 @@ public class CourseController {
     // GET COURSE BY ID
     // ===============================
     @GetMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
     public Course getCourse(@PathVariable Long id) {
         return courseService.getCourseById(id);
     }

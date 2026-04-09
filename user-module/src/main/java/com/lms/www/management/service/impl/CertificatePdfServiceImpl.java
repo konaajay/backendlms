@@ -51,16 +51,17 @@ public class CertificatePdfServiceImpl implements CertificatePdfService {
             // =====================================================
             CertificateTemplate templateEntity = templateRepository
                     .findFirstByTargetTypeAndTargetIdAndIsActiveTrue(
-                            TargetType.valueOf(certificate.getTargetType()),
+                            certificate.getTargetType(),
                             certificate.getTargetId())
                     .orElseGet(() -> templateRepository
                             .findFirstByTargetTypeAndTargetIdIsNullAndIsActiveTrue(
-                                    TargetType.valueOf(certificate.getTargetType()))
+                                    certificate.getTargetType())
                             .orElse(null));
 
             if (certificate.getTemplateId() != null) {
+                Long templateId = certificate.getTemplateId();
                 templateEntity = templateRepository
-                        .findById(certificate.getTemplateId())
+                        .findById(templateId)
                         .orElse(templateEntity);
             }
 
@@ -86,8 +87,13 @@ public class CertificatePdfServiceImpl implements CertificatePdfService {
 
             data.put("certificateId", certificate.getCertificateId());
 
-            String issuedDate = certificate.getIssuedDate()
-                    .format(DateTimeFormatter.ofPattern("dd MMM yyyy"));
+            LocalDateTime dateToFormat = certificate.getIssuedDate() != null 
+                    ? certificate.getIssuedDate() 
+                    : certificate.getIssueDate();
+            
+            String issuedDate = dateToFormat != null
+                    ? dateToFormat.format(DateTimeFormatter.ofPattern("dd MMM yyyy"))
+                    : LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd MMM yyyy"));
 
             data.put("issuedDate", issuedDate);
             data.put("date", issuedDate);
@@ -98,7 +104,7 @@ public class CertificatePdfServiceImpl implements CertificatePdfService {
             // =====================================================
             // 4️⃣ Score
             // =====================================================
-            if (TargetType.valueOf(certificate.getTargetType()) == TargetType.EXAM) {
+            if (certificate.getTargetType() == TargetType.EXAM) {
 
                 Double score = certificate.getScore() != null
                         ? certificate.getScore()
@@ -198,9 +204,23 @@ public class CertificatePdfServiceImpl implements CertificatePdfService {
             }
 
             if (htmlTemplate == null || htmlTemplate.isBlank()) {
-                throw new RuntimeException(
-                        "No certificate template found for target: "
-                                + certificate.getTargetType());
+                htmlTemplate = "<html><head><style>" +
+                        "body { font-family: sans-serif; text-align: center; padding: 50px; background-color: #f9f9f9; }" +
+                        "h1 { color: #333; font-size: 40px; margin-bottom: 10px; }" +
+                        "h2 { color: #666; font-size: 24px; margin-bottom: 40px; }" +
+                        "p { font-size: 20px; color: #444; margin: 10px 0; }" +
+                        ".student-name { font-size: 32px; font-weight: bold; color: #0056b3; margin: 20px 0; border-bottom: 2px solid #0056b3; display: inline-block; padding-bottom: 5px; }" +
+                        ".footer { margin-top: 50px; font-size: 16px; color: #888; }" +
+                        ".qr-container { margin-top: 40px; }" +
+                        "</style></head><body>" +
+                        "<h1>CERTIFICATE OF COMPLETION</h1>" +
+                        "<h2>This is to certify that</h2>" +
+                        "<div class='student-name'>" + (studentName != null ? studentName : "Student") + "</div>" +
+                        "<p>has successfully completed the program</p>" +
+                        "<h3 style='font-size:26px; color:#222;'>" + (eventTitle != null ? eventTitle : "LMS Target Event") + "</h3>" +
+                        "<div class='footer'>Certificate ID: " + certificate.getCertificateId() + "<br/>Issued Date: " + issuedDate + "</div>" +
+                        "<div class='qr-container'><img src='" + qrBase64 + "' width='150' height='150' alt='Verification QR'/></div>" +
+                        "</body></html>";
             }
 
             // =====================================================

@@ -138,7 +138,8 @@ public class EmailServiceImpl implements EmailService {
     
 
     // ================= COMMON =================
-    private void send(String to, String subject, String body) {
+    @Override
+    public void send(String to, String subject, String body) {
         try {
             SimpleMailMessage msg = new SimpleMailMessage();
             msg.setFrom("lmssender4@gmail.com");

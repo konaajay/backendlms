@@ -8,12 +8,10 @@ import org.springframework.stereotype.Service;
 
 import com.lms.www.management.model.InventoryStock;
 import com.lms.www.management.model.InventoryTransaction;
-import com.lms.www.management.model.Item;
 import com.lms.www.management.model.StockInward;
 import com.lms.www.management.model.Vendor;
 import com.lms.www.management.repository.InventoryStockRepository;
 import com.lms.www.management.repository.InventoryTransactionRepository;
-import com.lms.www.management.repository.ItemRepository;
 import com.lms.www.management.repository.StockInwardRepository;
 import com.lms.www.management.repository.VendorRepository;
 import com.lms.www.management.service.StockInwardService;
@@ -35,9 +33,7 @@ public class StockInwardServiceImpl implements StockInwardService {
     private final InventoryTransactionRepository inventoryTransactionRepository;
 
     private final VendorRepository vendorRepository;
-    private final ItemRepository itemRepository;
 
-    // ✅ CREATE (NO FILE)
     @Override
     public StockInward createStockInward(StockInward stockInward) {
 
@@ -48,11 +44,7 @@ public class StockInwardServiceImpl implements StockInwardService {
             throw new RuntimeException("Vendor is inactive");
         }
 
-        Item item = itemRepository.findById(stockInward.getItem().getId())
-                .orElseThrow(() -> new RuntimeException("Item not found"));
-
         stockInward.setVendor(vendor);
-        stockInward.setItem(item);
 
         if (stockInward.getPoReference() == null) {
             stockInward.setPoReference("PO-" + System.currentTimeMillis());
@@ -87,9 +79,10 @@ public class StockInwardServiceImpl implements StockInwardService {
         StockInward saved = stockInwardRepository.save(stockInward);
 
         // 2️⃣ UPDATE STOCK
-        InventoryStock inventory = inventoryStockRepository.findByItem(item)
+        String itemId = stockInward.getItemId();
+        InventoryStock inventory = inventoryStockRepository.findByItemId(itemId)
                 .orElseGet(() -> InventoryStock.builder()
-                        .item(item)
+                        .itemId(itemId)
                         .availableStock(0)
                         .reservedStock(0)
                         .damagedStock(0)
@@ -111,7 +104,7 @@ public class StockInwardServiceImpl implements StockInwardService {
 
         // 3️⃣ TRANSACTION
         InventoryTransaction txn = InventoryTransaction.builder()
-                .item(item)
+                .itemId(itemId)
                 .transactionType("INWARD")
                 .quantity(qty)
                 .beforeStock(beforeStock)
@@ -127,7 +120,6 @@ public class StockInwardServiceImpl implements StockInwardService {
         return saved;
     }
 
-    // ✅ UPLOAD FILE (SEPARATE API)
     @Override
     public StockInward uploadInvoice(Long id, MultipartFile file) {
 
@@ -145,8 +137,8 @@ public class StockInwardServiceImpl implements StockInwardService {
             directory.mkdirs();
         }
 
-        String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "file";
-        String fileName = System.currentTimeMillis() + "" + originalName.replaceAll("\\s+", "");
+        String originalName = file.getOriginalFilename();
+        String fileName = System.currentTimeMillis() + "" + (originalName != null ? originalName.replaceAll("\\s+", "") : "file");
 
         Path filePath = Paths.get(uploadDir + fileName);
 

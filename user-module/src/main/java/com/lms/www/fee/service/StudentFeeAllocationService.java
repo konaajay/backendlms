@@ -40,5 +40,7 @@ public interface StudentFeeAllocationService {
     // Internal usage or helper if needed
     com.lms.www.fee.allocation.entity.StudentFeeAllocation getFeeAllocationById(Long id);
 
+    com.lms.www.fee.allocation.entity.StudentFeeAllocation getFeeAllocationByUserId(Long userId);
+
     StudentLedgerResponse getStudentLedger(Long userId);
 }

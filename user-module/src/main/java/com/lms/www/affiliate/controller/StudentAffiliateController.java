@@ -29,21 +29,21 @@ public class StudentAffiliateController {
 
     // ===== DASHBOARD (Consolidated View) =====
     @GetMapping("/dashboard")
-    @PreAuthorize("hasAuthority('STUDENT_AFFILIATE_VIEW')")
+    @PreAuthorize("hasAuthority('STUDENT_AFFILIATE_VIEW') or hasRole('STUDENT')")
     public ResponseEntity<AffiliateDashboardResponse> getDashboard() {
         return ResponseEntity.ok(affiliateService.getDashboardDetailsSecure());
     }
 
     // ===== ACCOUNT VIEW (Account details & Wallet info) =====
     @GetMapping("/account")
-    @PreAuthorize("hasAuthority('STUDENT_AFFILIATE_VIEW')")
+    @PreAuthorize("hasAuthority('STUDENT_AFFILIATE_VIEW') or hasRole('STUDENT')")
     public ResponseEntity<AffiliateDashboardResponse> getAccountView() {
         return getDashboard();
     }
 
     // ===== MARKETING MANAGER VIEW (Leads & Metrics) =====
     @GetMapping("/marketing-manager")
-    @PreAuthorize("hasAuthority('STUDENT_AFFILIATE_VIEW')")
+    @PreAuthorize("hasAuthority('STUDENT_AFFILIATE_VIEW') or hasRole('STUDENT')")
     public ResponseEntity<List<AffiliateLeadDTO>> getMarketingManagerView() {
         return ResponseEntity.ok(affiliateService.getAffiliateLeadsSecure().stream()
                 .map(this::mapToLeadDTO)
@@ -52,7 +52,7 @@ public class StudentAffiliateController {
 
     // ===== PROFILE =====
     @GetMapping("/me")
-    @PreAuthorize("hasAuthority('STUDENT_AFFILIATE_VIEW')")
+    @PreAuthorize("hasAuthority('STUDENT_AFFILIATE_VIEW') or hasRole('STUDENT')")
     public ResponseEntity<StudentAffiliateResponse> getMyAffiliateProfile() {
         StudentAffiliateResponse response = affiliateService.getProfileSecure()
                 .map(dto -> StudentAffiliateResponse.builder()
@@ -67,22 +67,20 @@ public class StudentAffiliateController {
                         .build())
                 .orElse(null);
 
-        if (response == null) {
-            return ResponseEntity.notFound().build();
-        }
+        // ✅ Return 200 OK even if null, frontend should handle non-null as affiliate
         return ResponseEntity.ok(response);
     }
 
     // ===== PURCHASED COURSES (Available for Referral) =====
     @GetMapping("/me/purchased-courses")
-    @PreAuthorize("hasAuthority('STUDENT_AFFILIATE_VIEW')")
+    @PreAuthorize("hasAuthority('STUDENT_AFFILIATE_VIEW') or hasRole('STUDENT')")
     public ResponseEntity<List<PurchasedCourseResponse>> getMyPurchasedCourses() {
         return ResponseEntity.ok(referralService.getPurchasedCoursesSecure());
     }
 
     // ===== REGISTER =====
     @PostMapping("/register")
-    @PreAuthorize("hasAuthority('STUDENT_AFFILIATE_REGISTER')")
+    @PreAuthorize("hasAuthority('STUDENT_AFFILIATE_REGISTER') or hasRole('STUDENT')")
     public ResponseEntity<StudentAffiliateResponse> registerAffiliate(
             @Valid @RequestBody RegisterAffiliateRequest request) {
         Affiliate affiliate = affiliateService.registerStudentAsAffiliateSecure(request);
@@ -91,7 +89,7 @@ public class StudentAffiliateController {
 
     // ===== JOIN PROGRAM =====
     @PostMapping("/me/join")
-    @PreAuthorize("hasAuthority('STUDENT_AFFILIATE_JOIN')")
+    @PreAuthorize("hasAuthority('STUDENT_AFFILIATE_JOIN') or hasRole('STUDENT')")
     public ResponseEntity<String> joinReferralProgram(@RequestParam Long courseId) {
         String code = referralService.getOrCreateReferralCodeSecure(courseId, true);
         if (code == null) {
@@ -102,7 +100,7 @@ public class StudentAffiliateController {
 
     // ===== GET REFERRAL CODE =====
     @GetMapping("/me/referral-code")
-    @PreAuthorize("hasAuthority('STUDENT_AFFILIATE_VIEW')")
+    @PreAuthorize("hasAuthority('STUDENT_AFFILIATE_VIEW') or hasRole('STUDENT')")
     public ResponseEntity<String> getReferralCode(@RequestParam Long courseId) {
         String code = referralService.getOrCreateReferralCodeSecure(courseId, false);
         if (code == null) {
@@ -113,7 +111,7 @@ public class StudentAffiliateController {
 
     // ===== METRICS =====
     @GetMapping("/me/metrics")
-    @PreAuthorize("hasAuthority('STUDENT_AFFILIATE_VIEW')")
+    @PreAuthorize("hasAuthority('STUDENT_AFFILIATE_VIEW') or hasRole('STUDENT')")
     public ResponseEntity<AffiliateMetricsResponse> getMyMetrics() {
         return ResponseEntity.ok(affiliateService.getAffiliateMetricsSecure());
     }

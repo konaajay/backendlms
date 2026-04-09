@@ -97,8 +97,8 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new IllegalStateException("Exam not found"));
 
-        if (!"PUBLISHED".equals(exam.getStatus()))
-            throw new IllegalStateException("Exam not available");
+        if (!"PUBLISHED".equals(exam.getStatus()) && !"SCHEDULED".equals(exam.getStatus()))
+            throw new IllegalStateException("Exam not available (Status: " + exam.getStatus() + ")");
 
         List<ExamSection> sections =
                 examSectionRepository.findByExamIdOrderBySectionOrderAsc(examId);
@@ -214,8 +214,17 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
                 .mapToDouble(Double::doubleValue)
                 .sum();
 
+        // 🔥 Check if manual evaluation is needed (descriptive questions)
+        boolean needsManualEvaluation = responses.stream().anyMatch(r -> {
+            try {
+                com.lms.www.management.model.ExamQuestion eq = examQuestionRepository.findById(r.getExamQuestionId()).orElseThrow();
+                com.lms.www.management.model.Question q = eq.getQuestion(); // Assuming check here or similar
+                return "DESCRIPTIVE".equals(q.getQuestionType());
+            } catch (Exception e) { return false; }
+        });
+
         attempt.setScore(totalScore);
-        attempt.setStatus("EVALUATED");
+        attempt.setStatus(needsManualEvaluation ? "PENDING_EVALUATION" : "EVALUATED");
 
         examAttemptRepository.save(attempt);
 
@@ -257,12 +266,17 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
                 );
             }
 
-            emailNotificationService.sendExamResultNotification(
-                    attempt.getStudentId(),
-                    exam.getTitle(),
-                    attempt.getScore(),
-                    passed
-            );
+            if ("EVALUATED".equals(attempt.getStatus())) {
+                emailNotificationService.sendExamResultNotification(
+                        attempt.getStudentId(),
+                        exam.getTitle(),
+                        attempt.getScore(),
+                        passed
+                );
+            } else {
+                // TODO: emailNotificationService.sendInstructorGradingRequiredNotification(...)
+                System.out.println("Manual evaluation required for attempt: " + attempt.getAttemptId());
+            }
 
         } catch (Exception e) {
             System.err.println("Post evaluation process failed: " + e.getMessage());
@@ -294,6 +308,7 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
         result.put("percentage", percentage);
         result.put("passed", passed);
         result.put("score", attempt.getScore());
+        result.put("responses", examResponseRepository.findByAttemptId(attemptId));
 
         return result;
     }
@@ -319,5 +334,15 @@ public class ExamAttemptServiceImpl implements ExamAttemptService {
     @Override
     public ExamAttempt updateAttemptStatus(ExamAttempt attempt) {
         return examAttemptRepository.save(attempt);
+    }
+
+    @Override
+    public java.util.List<ExamAttempt> getAttemptsByExam(Long examId) {
+        return examAttemptRepository.findByExamId(examId);
+    }
+
+    @Override
+    public java.util.List<ExamAttempt> getAttemptsByInstructor(Long instructorId) {
+        return examAttemptRepository.findByInstructorId(instructorId);
     }
 }

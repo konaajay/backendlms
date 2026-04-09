@@ -2,6 +2,7 @@ package com.lms.www.service.Impl;
 
 
 import java.time.LocalDateTime;
+import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -89,6 +90,7 @@ import com.lms.www.tenant.TenantResolver;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+@Slf4j
 @Service
 @Transactional
 public class AdminServiceImpl implements AdminService {
@@ -1062,22 +1064,32 @@ public class AdminServiceImpl implements AdminService {
 
     // ===================== UPDATE / DELETE =====================
     @Override
-    public void updateUser(Long userId, User updatedUser, User admin, HttpServletRequest request) {
+    public void updateUser(Long userId, java.util.Map<String, Object> payload, User admin, HttpServletRequest request) {
         try {
             User existing = getUserByUserId(userId);
             
             // 🔒 BLOCK ADMIN → SUPER ADMIN
-            UserAuthorizationUtil.assertAdminCannotTouchSuperAdmin(
-                    admin,
-                    existing
-            );
-            
+            UserAuthorizationUtil.assertAdminCannotTouchSuperAdmin(admin, existing);
             UserAuthorizationUtil.assertAdminCannotTouchAdmin(admin, existing);
 
-            
-            if (updatedUser.getFirstName() != null) existing.setFirstName(updatedUser.getFirstName());
-            if (updatedUser.getLastName() != null) existing.setLastName(updatedUser.getLastName());
-            if (updatedUser.getPhone() != null) existing.setPhone(updatedUser.getPhone());
+            if (payload.containsKey("firstName")) existing.setFirstName((String) payload.get("firstName"));
+            if (payload.containsKey("lastName")) existing.setLastName((String) payload.get("lastName"));
+            if (payload.containsKey("phone")) existing.setPhone((String) payload.get("phone"));
+
+            // ✅ Handle Student-specific fields if applicable
+            if ("ROLE_STUDENT".equals(existing.getRoleName())) {
+                studentRepository.findByUser_UserId(userId).ifPresent(student -> {
+                    if (payload.containsKey("dob")) {
+                        try {
+                            student.setDob(java.time.LocalDate.parse((String) payload.get("dob")));
+                        } catch (Exception e) {
+                            log.error("Failed to parse DOB for student: {}", payload.get("dob"));
+                        }
+                    }
+                    if (payload.containsKey("gender")) student.setGender((String) payload.get("gender"));
+                    studentRepository.save(student);
+                });
+            }
 
             userRepository.save(existing);
             emailService.sendProfileUpdatedMail(existing);
@@ -1099,12 +1111,17 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public void mapParentToStudent(Long parentId, Long studentId, User admin, HttpServletRequest request) {
+        if (parentId == null || studentId == null) {
+            throw new RuntimeException("Parent ID and Student ID cannot be null");
+        }
         try {
+            log.info("🚀 MAPPING INITIATED: Parent ID {} to Student ID {} (Admin: {})", parentId, studentId, admin.getEmail());
+            
             Parent parent = parentRepository.findById(parentId)
-                    .orElseThrow(() -> new RuntimeException("Parent not found"));
+                    .orElseThrow(() -> new RuntimeException("Parent not found with ID: " + parentId));
 
             Student student = studentRepository.findById(studentId)
-                    .orElseThrow(() -> new RuntimeException("Student not found"));
+                    .orElseThrow(() -> new RuntimeException("Student not found with ID: " + studentId));
 
             boolean alreadyMapped = parentStudentRelationRepository.existsByParentAndStudent(parent, student);
             if (alreadyMapped) {
@@ -1404,6 +1421,40 @@ public class AdminServiceImpl implements AdminService {
         }
 
         return null;
+    }
+    
+    @Override
+    @Transactional
+    public void promoteLeadToStudent(Long userId, StudentRequest request, User admin, HttpServletRequest httpRequest) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        if (!"ROLE_LEAD".equals(user.getRoleName())) {
+            throw new RuntimeException("User is not a Lead and cannot be promoted to a Student.");
+        }
+
+        User convertedUser = convertLeadToStudentUser(user, request, admin, httpRequest);
+
+        Student existingStudent = studentRepository.findByUser_UserId(user.getUserId()).orElse(null);
+        Student student;
+        
+        if (existingStudent != null) {
+            student = existingStudent;
+            student.setDob(request.getDob());
+            student.setGender(request.getGender());
+        } else {
+            student = new Student();
+            student.setUser(convertedUser);
+            student.setDob(request.getDob());
+            student.setGender(request.getGender());
+        }
+
+        studentRepository.save(student);
+        
+        if (!"ROLE_LEAD".equals(convertedUser.getRoleName())) {
+            communityService.autoJoinGlobalCommunity(convertedUser.getUserId());
+            communityService.autoJoinRoleCommunity(convertedUser.getUserId(), convertedUser.getRoleName());
+        }
     }
     
     private User convertLeadToStudentUser(

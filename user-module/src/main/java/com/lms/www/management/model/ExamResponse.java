@@ -63,6 +63,9 @@ public class ExamResponse {
     @Column(name = "coding_submission_code", columnDefinition = "LONGTEXT")
     private String codingSubmissionCode;
 
+    @Column(name = "feedback", columnDefinition = "TEXT")
+    private String feedback;
+
     @Builder.Default
     @Transient
     private LocalDateTime createdAt = LocalDateTime.now();

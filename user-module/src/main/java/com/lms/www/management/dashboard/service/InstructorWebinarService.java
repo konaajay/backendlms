@@ -28,4 +28,6 @@ public interface InstructorWebinarService {
     WebinarQuestion answerQuestion(Long instructorId, Long webinarId, Long questionId, String answer);
 
     WebinarRecording uploadRecording(Long instructorId, Long webinarId, MultipartFile file);
+
+    List<Webinar> getScheduledWebinars(Long instructorId);
 }

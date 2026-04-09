@@ -955,10 +955,11 @@ CREATE TABLE `commission_rules` (
 
   `course_id` BIGINT NOT NULL,
 
-  `commission_percent` DECIMAL(19,4) NOT NULL DEFAULT 0,
+  `affiliate_percent` DECIMAL(19,4) NOT NULL DEFAULT 0,
+  `student_discount_percent` DECIMAL(19,4) NOT NULL DEFAULT 0,
 
-  `is_bonus` BOOLEAN NOT NULL,
-  `active` BOOLEAN NOT NULL,
+  `is_bonus` BOOLEAN NOT NULL DEFAULT FALSE,
+  `active` BOOLEAN NOT NULL DEFAULT TRUE,
 
   `created_at` DATETIME,
 
@@ -1019,6 +1020,8 @@ CREATE TABLE `leads` (
   `phone` VARCHAR(255),
   `batchId` BIGINT,
   `courseId` BIGINT,
+  `course_interest` VARCHAR(255),
+  `referral_code` VARCHAR(100),
   `source` VARCHAR(255),
   `utmSource` VARCHAR(255),
   `utmMedium` VARCHAR(255),
@@ -1029,6 +1032,7 @@ CREATE TABLE `leads` (
   `createdAt` DATETIME,
   UNIQUE KEY `uk_leads_email_batch` (`email`, `batchId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 -- =========================
 -- TRACKED LINKS
@@ -2566,6 +2570,7 @@ CREATE TABLE `books` (
 
   `is_deleted` BOOLEAN NOT NULL DEFAULT FALSE,
 
+  `created_by` VARCHAR(255),
   `created_at` DATETIME NOT NULL,
   `updated_at` DATETIME NOT NULL,
 
@@ -3023,6 +3028,7 @@ CREATE TABLE IF NOT EXISTS books (
     available_copies INT NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'AVAILABLE',
     is_deleted BIT(1) NOT NULL DEFAULT b'0',
+    created_by VARCHAR(255),
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (book_id),
@@ -3664,7 +3670,7 @@ CREATE TABLE `attendance_record` (
   PRIMARY KEY (`id`),
 
   UNIQUE KEY `uk_attendance_record`
-  (`batch_id`, `student_id`, `attendance_date`)
+  (`attendance_session_id`, `student_id`)
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -4404,6 +4410,7 @@ CREATE TABLE `exam_response` (
 
   `marks_awarded` DOUBLE DEFAULT NULL,
   `evaluation_type` VARCHAR(50) DEFAULT NULL,
+  `feedback` TEXT,
 
   PRIMARY KEY (`response_id`),
 
@@ -5673,10 +5680,6 @@ CREATE TABLE `commission_rules` (
   KEY `idx_course_rule` (`course_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- =========================
--- SEED INITIAL CONFIG
--- =========================
-INSERT INTO `wallet_configs` (`default_min_payout_amount`, `max_payout_amount`, `student_withdrawal_enabled`, `affiliate_withdrawal_enabled`, `max_pending_payouts`, `updated_at`)
-VALUES (100.0000, 50000.0000, 0, 1, 1, NOW());
+
 
 SET FOREIGN_KEY_CHECKS = 1;

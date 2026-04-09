@@ -23,22 +23,34 @@ public class TrackingService {
     private TrackedLinkRepository trackedLinkRepository;
 
     @Transactional
-    public void track(String tid, String eventType, String sessionId, String metadata) {
-        log.info("TRACK EVENT: tid={}, type={}, session={}", tid, eventType, sessionId);
+    public void track(String tid, String eventType, String sessionId, String metadata, String source, 
+                      String utmSource, String utmMedium, String utmCampaign, String page) {
+        log.info("TRACK EVENT: tid={}, type={}, session={}, source={}, page={}", tid, eventType, sessionId, source, page);
         
         TrafficEvent event = new TrafficEvent();
         event.setTrackedLinkId(tid);
         event.setEventType(eventType);
         event.setSessionId(sessionId);
-        event.setMetadataJSON(metadata);
+        event.setMetadataJson(metadata);
+        event.setSource(source);
+        
+        // Attribution
+        event.setUtmSource(utmSource);
+        event.setUtmMedium(utmMedium);
+        event.setUtmCampaign(utmCampaign);
+        event.setPage(page);
         
         // Optional link to entity if exists
-        trackedLinkRepository.findByTrackedLinkId(tid).ifPresent(event::setTrackedLink);
+        if (tid != null && !tid.isBlank() && !tid.equalsIgnoreCase("null")) {
+            trackedLinkRepository.findByTrackedLinkId(tid).ifPresent(event::setTrackedLink);
+        }
         
         trafficEventRepository.save(event);
     }
 
     public void track(TrackingRequest request) {
-        track(request.getTrackedLinkId(), request.getEventType(), request.getSessionId(), request.getMetadata());
+        track(request.getTrackedLinkId(), request.getEventType(), request.getSessionId(), 
+              request.getMetadata(), request.getSource(), request.getUtmSource(), 
+              request.getUtmMedium(), request.getUtmCampaign(), request.getPage());
     }
 }

@@ -32,9 +32,9 @@ public class TrackingService {
         event.setTrackedLinkId(tid);
         event.setEventType(eventType);
         event.setSessionId(sessionId);
-        event.setMetadataJSON(metadata);
+        event.setMetadataJson(metadata);
         
-        if (tid != null) {
+        if (tid != null && !tid.isBlank() && !tid.equalsIgnoreCase("null")) {
             trackedLinkRepository.findByTrackedLinkId(tid).ifPresent(event::setTrackedLink);
         }
         

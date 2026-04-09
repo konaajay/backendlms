@@ -1,0 +1,919 @@
+1. Create
+
+POST /api/...
+
+Headers:
+
+Content-Type: application/json
+Authorization: Bearer <token>
+
+Body:
+
+{}
+2. Get All
+
+GET /api/...
+
+Headers:
+
+Authorization: Bearer <token>
+3. Get By Id
+
+GET /api/.../{id}
+
+Headers:
+
+Authorization: Bearer <token>
+4. Update
+
+PUT /api/.../{id}
+
+Headers:
+
+Content-Type: application/json
+Authorization: Bearer <token>
+
+Body:
+
+{}
+5. Delete
+
+DELETE /api/.../{id}
+
+Headers:
+
+Authorization: Bearer <token>
+Order to test
+Login → get token
+Create
+Get All
+Get By Id
+Update
+Delete
+
+Send first controller.
+
+Pasted code.java
+File
+
+Controller: AdminController
+
+Headers (use for ALL)
+Content-Type: application/json
+Authorization: Bearer <token>
+1. Create Manager
+
+POST /api/admin/manager
+
+Body:
+
+{
+  "name": "Manager One",
+  "email": "manager1@test.com",
+  "password": "123456",
+  "roleId": 2
+}
+2. Create User
+
+POST /api/admin/users
+
+Body:
+
+{
+  "name": "User One",
+  "email": "user1@test.com",
+  "password": "123456",
+  "roleId": 3
+}
+3. Update User
+
+PUT /api/admin/users/{id}
+
+Example:
+/api/admin/users/1
+
+Body:
+
+{
+  "name": "Updated User",
+  "email": "updated@test.com",
+  "roleId": 3
+}
+4. Delete User
+
+DELETE /api/admin/users/{id}
+
+Example:
+/api/admin/users/1
+
+5. Get All Users (pagination)
+
+GET
+/api/admin/users?page=0&size=10
+
+6. Get Roles
+
+GET /api/admin/roles
+
+7. Create Role
+
+POST /api/admin/roles
+
+Body:
+
+{
+  "name": "TEAM_LEADER",
+  "permissions": ["MANAGE_USERS", "VIEW_LEADS"]
+}
+8. Get Permissions
+
+GET /api/admin/permissions
+
+9. Get All Leads
+
+GET
+/api/admin/leads?page=0&size=10
+
+10. Lead Stats
+
+GET /api/admin/stats
+
+11. Dashboard Stats (with filters)
+
+GET
+
+/api/admin/dashboard/stats?start=2026-03-01T00:00:00&end=2026-03-30T23:59:59&userId=1
+12. Member Performance
+
+GET
+
+/api/admin/reports/member-performance?start=2026-03-01T00:00:00&end=2026-03-30T23:59:59
+13. Payment History
+
+GET
+
+/api/admin/payments/history?tlId=1&associateId=2&status=PAID&startDate=2026-03-01T00:00:00&endDate=2026-03-30T23:59:59
+14. Invoice by Lead
+
+GET
+/api/admin/payments/invoice/{leadId}
+
+Example:
+/api/admin/payments/invoice/10
+
+15. Get Team Leaders
+
+GET /api/admin/team-leaders
+
+16. Get Associates by TL
+
+GET /api/admin/associates/{tlId}
+
+Example:
+/api/admin/associates/1
+
+17. Test API
+
+GET /api/admin/test
+
+Order to test (strict)
+Login → get token
+Get Permissions
+Create Role
+Get Roles
+Create Manager
+Create User
+Get Users
+Update User
+Get Leads
+Stats → Dashboard → Reports
+Payments → Invoice
+Delete User
+Test endpoint
+
+
+
+Controller: AuthController
+
+Headers
+Content-Type: application/json
+1. Login
+
+POST /api/auth/login
+
+Body:
+
+{
+  "email": "admin@test.com",
+  "password": "123456"
+}
+Expected Response
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "type": "Bearer",
+  "id": 1,
+  "name": "Admin",
+  "email": "admin@test.com",
+  "roles": ["ADMIN"],
+  "permissions": ["MANAGE_USERS"]
+}
+How to use token
+
+For all other APIs:
+
+Authorization: Bearer <token>
+
+
+
+
+
+Controller: LeadController
+
+Headers (use for ALL)
+Content-Type: application/json
+Authorization: Bearer <token>
+1. Get Lead Stats
+
+GET /api/leads/stats
+
+2. Get My Leads
+
+GET /api/leads/my
+
+3. Get Lead By Id
+
+GET /api/leads/{id}
+
+Example:
+/api/leads/1
+
+4. Create Lead
+
+POST /api/leads
+
+Body:
+
+{
+  "name": "Ajay",
+  "phone": "9876543210",
+  "email": "lead@test.com",
+  "source": "Facebook",
+  "course": "Java Full Stack",
+  "status": "NEW"
+}
+5. Bulk Upload Leads (file)
+
+POST /api/leads/bulk-upload
+
+Headers:
+
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+
+Body (form-data):
+
+key: file
+value: <upload CSV/Excel file>
+6. Update Lead Status
+
+PUT
+/api/leads/{id}/status?status=CONTACTED&note=Called
+
+Example:
+/api/leads/1/status?status=INTERESTED&note=Good+response
+
+7. Reject Lead
+
+POST /api/leads/{id}/reject
+
+Body:
+
+{
+  "reason": "Not interested",
+  "note": "User declined"
+}
+8. Record Call Outcome
+
+POST /api/leads/{id}/record-outcome
+
+Body:
+
+{
+  "status": "FOLLOW_UP",
+  "note": "Call again",
+  "followUpDate": "2026-04-02T10:00:00"
+}
+9. Send Payment Link
+
+POST /api/leads/{id}/send-payment-link
+
+Body:
+
+{
+  "paymentType": "FULL",
+  "initialAmount": 499,
+  "totalAmount": 10000,
+  "note": "Interested lead"
+}
+For Partial Payment
+{
+  "paymentType": "PART",
+  "initialAmount": 500,
+  "totalAmount": 10000,
+  "note": "Split payment"
+}
+Order to test (strict)
+Login
+Create Lead
+Get My Leads
+Get Lead By Id
+Update Status
+Record Outcome
+Reject (optional path)
+Send Payment Link
+Stats
+
+
+
+
+
+Controller: LeadTaskController
+
+Headers (use for ALL)
+Content-Type: application/json
+Authorization: Bearer <token>
+1. Get All Tasks (hierarchy-based)
+
+GET /api/tasks
+
+2. Get Tasks by Lead
+
+GET /api/tasks/lead/{leadId}
+
+Example:
+/api/tasks/lead/1
+
+3. Search Tasks by Date
+
+GET
+/api/tasks/search?leadId=1&date=2026-03-30
+
+4. Add Task to Lead (direct entity)
+
+POST /api/tasks/lead/{leadId}
+
+Body:
+
+{
+  "title": "Call client",
+  "description": "Follow up call",
+  "dueDate": "2026-04-01T10:00:00",
+  "status": "PENDING",
+  "taskType": "CALL"
+}
+5. Create Manual Task (recommended)
+
+POST /api/tasks
+
+Body:
+
+{
+  "leadId": 1,
+  "title": "Demo session",
+  "description": "Schedule demo",
+  "dueDate": "2026-04-02T11:00:00",
+  "taskType": "MANUAL"
+}
+6. Update Task Status
+
+PUT
+/api/tasks/{taskId}/status?status=COMPLETED
+
+Example:
+/api/tasks/1/status?status=COMPLETED
+
+Valid values:
+
+PENDING
+COMPLETED
+CANCELLED
+7. Delete Task (ADMIN only)
+
+DELETE /api/tasks/{id}
+
+Example:
+/api/tasks/1
+
+Order to test (strict)
+Login
+Create Lead (from LeadController)
+Create Manual Task
+Get All Tasks
+Get Tasks by Lead
+Search by Date
+Update Status
+Delete Task
+
+
+
+
+
+
+
+Controller: ManagerController
+
+Headers (use for ALL)
+Content-Type: application/json
+Authorization: Bearer <token>
+1. Create Team Leader
+
+POST /api/manager/team-leader
+
+Body:
+
+{
+  "name": "TL One",
+  "email": "tl@test.com",
+  "password": "123456",
+  "roleId": 2
+}
+2. Get Team Leaders
+
+GET /api/manager/team-leaders
+
+3. Get Team Tree
+
+GET /api/manager/team-tree
+
+4. Create Lead
+
+POST /api/manager/leads
+
+Body:
+
+{
+  "name": "Lead One",
+  "phone": "9876543210",
+  "email": "lead@test.com",
+  "source": "Instagram",
+  "course": "Java",
+  "status": "NEW"
+}
+5. Bulk Upload Leads
+
+POST /api/manager/leads/bulk-upload
+
+Headers:
+
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+
+Body (form-data):
+
+key: file
+value: <file>
+
+key: assignedToIds
+value: 2,3
+6. Get All Leads
+
+GET /api/manager/leads
+
+7. Assign Lead to TL
+
+POST /api/manager/assign-lead/{leadId}/{tlId}
+
+Example:
+/api/manager/assign-lead/1/2
+
+8. Bulk Assign Leads
+
+POST /api/manager/leads/bulk-assign
+
+Body:
+
+{
+  "leadIds": [1, 2, 3],
+  "tlId": 2
+}
+9. Create User (Associate)
+
+POST /api/manager/users
+
+Body:
+
+{
+  "name": "Associate One",
+  "email": "associate@test.com",
+  "password": "123456",
+  "roleId": 3
+}
+10. Update User
+
+PUT /api/manager/users/{id}
+
+Example:
+/api/manager/users/3
+
+Body:
+
+{
+  "name": "Updated Associate",
+  "email": "updated@test.com",
+  "roleId": 3
+}
+11. Delete User
+
+DELETE /api/manager/users/{id}
+
+Example:
+/api/manager/users/3
+
+12. Get Permissions
+
+GET /api/manager/permissions
+
+13. Payment History
+
+GET
+
+/api/manager/payments/history?tlId=2&associateId=3&status=PAID&startDate=2026-03-01T00:00:00&endDate=2026-03-30T23:59:59
+14. Dashboard Stats
+
+GET
+
+/api/manager/dashboard/stats?userId=2&start=2026-03-01T00:00:00&end=2026-03-30T23:59:59
+15. Member Performance
+
+GET
+
+/api/manager/reports/member-performance?start=2026-03-01T00:00:00&end=2026-03-30T23:59:59
+16. Assign Supervisor
+
+POST
+/api/manager/users/{associateId}/assign-supervisor/{supervisorId}
+
+Example:
+/api/manager/users/3/assign-supervisor/2
+
+17. Get Roles
+
+GET /api/manager/roles
+
+Order to test (strict)
+Login
+Get Roles + Permissions
+Create Team Leader
+Create Associate
+Assign Supervisor
+Create Lead
+Get Leads
+Assign Lead
+Bulk Assign
+Dashboard + Reports
+Payments
+Update User
+Delete User
+
+
+
+Controller: PaymentController
+
+Headers (use where needed)
+Content-Type: application/json
+Authorization: Bearer <token>
+1. Payment Success Redirect (browser only)
+
+GET
+/payment-success?order_id=ORDER123
+
+➡️ This redirects to frontend.
+Test in browser, not Postman.
+
+2. Get Payment Status
+
+GET
+/api/payments/status?order_id=ORDER123
+
+3. Get Public Invoice (only if PAID)
+
+GET
+/api/public/payments/invoice?order_id=ORDER123
+
+⚠️ Fails if status != PAID
+
+4. Update Payment Status
+
+PUT
+
+/api/payments/{id}/status?status=PAID&paymentMethod=UPI&note=Paid&actualPaidAmount=5000&nextDueDate=2026-04-10T00:00:00
+
+Example:
+/api/payments/1/status?status=PAID&paymentMethod=UPI
+
+5. Split Payment
+
+POST /api/payments/{id}/split
+
+Body:
+
+{
+  "totalAmount": 10000,
+  "initialAmount": 5000,
+  "remainingAmount": 5000,
+  "nextDueDate": "2026-04-10T00:00:00"
+}
+Order to test (strict)
+Login
+Create Lead → Send Payment Link (from LeadController)
+Get Payment Status
+Update Payment Status
+Get Public Invoice
+Split Payment
+
+Controller: PaymentRedirectController
+
+No headers needed
+1. Redirect to Frontend Payment Page
+
+GET
+/pay/{sessionId}
+
+Example:
+/pay/abc123
+
+➡️ Redirects to:
+http://localhost:3000/pay/abc123
+
+2. Redirect with Mode
+
+GET
+/pay/{sessionId}?mode=FULL
+
+Example:
+/pay/abc123?mode=PART
+
+➡️ Redirects to:
+http://localhost:3000/pay/abc123?mode=PART
+
+How to test
+Use browser (not Postman)
+Paste URL → check redirect
+Order to test
+Generate payment link (LeadController)
+Copy sessionId
+Open /pay/{sessionId} in browser
+
+
+Controller: PaymentWebhookController
+
+Headers
+Content-Type: application/json
+x-webhook-signature: <signature>
+x-webhook-timestamp: <timestamp>
+1. Cashfree Webhook
+
+POST /api/payment/webhook
+
+Body (sample):
+
+{
+  "type": "PAYMENT_SUCCESS_WEBHOOK",
+  "data": {
+    "order": {
+      "orderId": "ORDER123"
+    },
+    "payment": {
+      "paymentStatus": "SUCCESS"
+    }
+  }
+}
+Failed Payment Example
+{
+  "type": "PAYMENT_FAILED_WEBHOOK",
+  "data": {
+    "order": {
+      "orderId": "ORDER123"
+    },
+    "payment": {
+      "paymentStatus": "FAILED"
+    }
+  }
+}
+Notes (important for testing)
+Signature must match backend logic → otherwise 401
+For local testing:
+Either mock verifyWebhookSignature() → return true
+Or send correct signature from Cashfree
+Order to test (strict)
+Create Lead
+Send Payment Link
+Simulate webhook (this API)
+Check Payment Status API
+Check Lead status updated
+
+
+
+
+Controller: ReportController
+
+Headers (use for ALL)
+Authorization: Bearer <token>
+1. Get Stats
+
+GET
+
+/api/reports/stats?from=2026-03-01&to=2026-03-30&teamLeaderId=2&userId=3&status=INTERESTED
+Minimal
+/api/reports/stats
+2. Get Trend
+
+GET
+
+/api/reports/trend?from=2026-03-01&to=2026-03-30&teamLeaderId=2&userId=3
+Minimal
+/api/reports/trend
+Valid Params
+from → YYYY-MM-DD
+to → YYYY-MM-DD
+teamLeaderId → number
+userId → number
+status → string (only for stats)
+Order to test (strict)
+Login
+Create Leads (different statuses)
+Assign Leads (TL / User)
+Call /stats
+Call /trend
+
+
+
+Controller: TeamLeaderController
+
+Headers (use for ALL)
+Content-Type: application/json
+Authorization: Bearer <token>
+1. Bulk Upload Leads
+
+POST /api/tl/leads/bulk-upload
+
+Headers:
+
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+
+Body (form-data):
+
+key: file
+value: <file>
+
+key: assignedToIds
+value: 3,4
+2. Create Lead
+
+POST /api/tl/leads
+
+Body:
+
+{
+  "name": "Lead TL",
+  "phone": "9876543210",
+  "email": "leadtl@test.com",
+  "source": "Website",
+  "course": "Java",
+  "status": "NEW"
+}
+3. Get My Leads
+
+GET /api/tl/leads/my
+
+4. Get My Lead Stats
+
+GET /api/tl/leads/stats
+
+5. Update Lead Status
+
+PUT
+/api/tl/leads/{id}/status?status=INTERESTED&note=Good
+
+6. Reject Lead
+
+POST /api/tl/leads/{id}/reject
+
+Body:
+
+{
+  "reason": "Not interested",
+  "note": "Rejected"
+}
+7. Update Note
+
+PUT /api/tl/leads/{id}/note
+
+Body:
+
+{
+  "note": "Client asked to call later"
+}
+8. Send Payment Link
+
+POST /api/tl/leads/{id}/send-payment-link
+
+Body:
+
+{
+  "paymentType": "FULL",
+  "initialAmount": 500,
+  "totalAmount": 10000,
+  "note": "Interested"
+}
+9. Mark as Paid
+
+POST /api/tl/leads/{id}/mark-paid
+
+10. Update Payment Link
+
+PUT /api/tl/leads/{id}/payment-link
+
+Body:
+
+{
+  "link": "https://payment.link/test"
+}
+11. Assign Lead to Associate
+
+POST /api/tl/leads/{leadId}/assign/{associateId}
+
+Example:
+/api/tl/leads/1/assign/3
+
+12. Get Subordinates
+
+GET /api/tl/subordinates
+
+13. Payment History
+
+GET
+
+/api/tl/payments/history?status=PAID&startDate=2026-03-01T00:00:00&endDate=2026-03-30T23:59:59
+14. Dashboard Stats
+
+GET
+
+/api/tl/dashboard/stats?userId=3&start=2026-03-01T00:00:00&end=2026-03-30T23:59:59
+15. Member Performance
+
+GET
+
+/api/tl/reports/member-performance?start=2026-03-01T00:00:00&end=2026-03-30T23:59:59
+Order to test (strict)
+Login (TL)
+Create Lead
+Get My Leads
+Update Status
+Assign to Associate
+Add Note
+Send Payment Link
+Mark Paid
+Stats + Dashboard
+Payment History
+Reject (optional)
+
+
+
+
+
+
+Controller: WebhookController
+
+Headers
+Content-Type: application/json
+1. Test Webhook (Raw Payload Logger)
+
+POST /api/webhook/payment
+
+Body:
+
+{
+  "type": "PAYMENT_SUCCESS_WEBHOOK",
+  "data": {
+    "order": {
+      "orderId": "ORDER123"
+    },
+    "payment": {
+      "paymentStatus": "SUCCESS"
+    }
+  }
+}
+What it does
+Just logs payload
+No validation
+Always returns 200 OK
+When to use
+Debug webhook payload from Cashfree
+Check if webhook is hitting backend
+Order to test
+Send POST to /api/webhook/payment
+Check backend logs
+Then test real webhook (/api/payment/webhook)
+

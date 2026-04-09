@@ -2,6 +2,7 @@ package com.lms.www.campus.service.student.impl;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Arrays;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -36,11 +37,17 @@ public class StudentLibraryServiceImpl {
     private BookReservationRepository bookReservationRepository;
 
     public Page<Books> getBooksForStudent(Pageable pageable) {
-        return booksRepository.findAll(pageable);
+        return booksRepository.findByIsDeletedFalse(pageable);
     }
 
-    public Page<BookIssueRecord> getMyIssuedBooks(Long studentId, Pageable pageable) {
-        return issueRepository.findByUserId(studentId, pageable);
+    public List<BookIssueRecord> getMyIssuedBooks(Long studentId) {
+        return issueRepository.findByUserIdAndStatusIn(studentId, 
+            Arrays.asList(BookIssueRecord.Status.ISSUED, BookIssueRecord.Status.OVERDUE));
+    }
+
+    public List<BookIssueRecord> getMyLibraryHistory(Long studentId) {
+        return issueRepository.findByUserIdAndStatusIn(studentId, 
+            Arrays.asList(BookIssueRecord.Status.RETURNED, BookIssueRecord.Status.LOST));
     }
 
     public List<LibraryFine> getMyFines(Long studentId) {

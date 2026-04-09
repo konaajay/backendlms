@@ -34,4 +34,9 @@ public interface ExamAttemptRepository
         List<ExamAttempt> findByExamIdAndStatus(Long examId, String status);
 
         List<ExamAttempt> findByStudentIdAndExamId(Long studentId, Long examId);
+
+        List<ExamAttempt> findByStudentIdAndExamIdIn(Long studentId, List<Long> examIds);
+
+        @org.springframework.data.jpa.repository.Query("SELECT ea FROM ExamAttempt ea JOIN Exam e ON ea.examId = e.examId WHERE e.createdBy = :instructorId")
+        List<ExamAttempt> findByInstructorId(@org.springframework.data.repository.query.Param("instructorId") Long instructorId);
 }

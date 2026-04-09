@@ -65,4 +65,5 @@ public interface EmailService {
             LocalDateTime time
     );
 
+    void send(String to, String subject, String body);
 }

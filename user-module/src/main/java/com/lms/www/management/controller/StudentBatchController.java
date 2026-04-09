@@ -144,4 +144,9 @@ public class StudentBatchController {
                                                 "message", "Bulk enrollment completed",
                                                 "enrolledCount", count));
         }
-}
+    @GetMapping
+    @PreAuthorize("hasAuthority('STUDENT_BATCH_VIEW') or hasAuthority('ALL_PERMISSIONS')")
+    public ResponseEntity<List<StudentBatch>> getAllEnrollments() {
+        return ResponseEntity.ok(studentBatchService.getAllEnrollments());
+    }
+}

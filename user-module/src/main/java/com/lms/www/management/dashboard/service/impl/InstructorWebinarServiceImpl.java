@@ -142,6 +142,12 @@ public class InstructorWebinarServiceImpl implements InstructorWebinarService {
         return webinarRecordingRepository.save(recording);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<Webinar> getScheduledWebinars(Long instructorId) {
+        return webinarRepository.findByTrainerIdAndStatus(instructorId, WebinarStatus.SCHEDULED);
+    }
+
     private Webinar validateWebinarOwnership(Long instructorId, Long webinarId) {
         Webinar webinar = webinarRepository.findById(webinarId)
                 .orElseThrow(() -> new ResourceNotFoundException("Webinar not found"));

@@ -192,8 +192,8 @@ public class ExamResponseServiceImpl implements ExamResponseService {
 
         attemptToUpdate.setScore(totalScore);
 
-        // 🔥 THIS IS THE KEY FIX
-        attemptToUpdate.setStatus("EVALUATED");
+        // 🔥 Remove automatic status change to EVALUATED
+        // The status should only reach EVALUATED when all questions are graded.
 
         examAttemptRepository.save(attemptToUpdate);
 

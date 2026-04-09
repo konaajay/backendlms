@@ -38,7 +38,7 @@ public interface StudentBatchRepository
     
     @Query(
             value = """
-                SELECT CAST(student_id AS SIGNED)
+                SELECT DISTINCT CAST(student_id AS SIGNED)
                 FROM student_batch
                 WHERE batch_id = :batchId
             """,

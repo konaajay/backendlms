@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.Builder;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -14,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CourseInventoryMapping {
 
@@ -24,9 +26,8 @@ public class CourseInventoryMapping {
     @Column(name = "course_id")
     private Long courseId;
 
-    @ManyToOne
-    @JoinColumn(name = "item_id")
-    private Item item;
+    @Column(name = "item_id", length = 255)
+    private String itemId;
 
     @Column(name = "mandatory")
     private Boolean mandatory;
@@ -50,93 +51,26 @@ public class CourseInventoryMapping {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Explicitly adding getters and setters to bypass any Lombok issues in the IDE
-    public Long getId() {
-        return id;
+    // Transient fields for the UI
+    @Transient
+    private String name; // This corresponds to Course Name in UI
+
+    @Transient
+    @Builder.Default
+    private java.util.List<String> mandatoryItems = new java.util.ArrayList<>();
+
+    @Transient
+    @Builder.Default
+    private java.util.List<String> optionalItems = new java.util.ArrayList<>();
+
+    @com.fasterxml.jackson.annotation.JsonProperty("itemId")
+    public void setItemId(String itemId) {
+        this.itemId = itemId;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getCourseId() {
-        return courseId;
-    }
-
-    public void setCourseId(Long courseId) {
-        this.courseId = courseId;
-    }
-
-    public Item getItem() {
-        return item;
-    }
-
-    public void setItem(Item item) {
-        this.item = item;
-    }
-
-    public Boolean getMandatory() {
-        return mandatory;
-    }
-
-    public void setMandatory(Boolean mandatory) {
-        this.mandatory = mandatory;
-    }
-
-    public Boolean getAutoReserve() {
-        return autoReserve;
-    }
-
-    public void setAutoReserve(Boolean autoReserve) {
-        this.autoReserve = autoReserve;
-    }
-
-    public Double getPrice() {
-        return price;
-    }
-
-    public void setPrice(Double price) {
-        this.price = price;
-    }
-
-    public Boolean getRefundable() {
-        return refundable;
-    }
-
-    public void setRefundable(Boolean refundable) {
-        this.refundable = refundable;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public Integer getQuantityRequired() {
-        return quantityRequired;
-    }
-
-    public void setQuantityRequired(Integer quantityRequired) {
-        this.quantityRequired = quantityRequired;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
+    @com.fasterxml.jackson.annotation.JsonProperty("itemId")
+    public String getItemId() {
+        return itemId;
     }
 
     @PrePersist

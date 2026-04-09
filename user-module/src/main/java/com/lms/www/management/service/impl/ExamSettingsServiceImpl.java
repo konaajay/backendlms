@@ -32,10 +32,12 @@ public class ExamSettingsServiceImpl implements ExamSettingsService {
                         new ResourceNotFoundException("Exam not found with id: " + examId));
 
         // 🔒 ENTERPRISE RULE: settings are mutable ONLY in DRAFT
+        /*
         if (!"DRAFT".equals(exam.getStatus())) {
             throw new IllegalStateException(
                     "Exam settings can be modified only when exam is in DRAFT state");
         }
+        */
 
         settings.setExamId(examId);
 
@@ -65,10 +67,12 @@ public class ExamSettingsServiceImpl implements ExamSettingsService {
                         new ResourceNotFoundException("Exam not found with id: " + examId));
 
         // 🔒 Keep same enterprise rule
+        /*
         if (!"DRAFT".equals(exam.getStatus())) {
             throw new IllegalStateException(
                     "Exam settings can be modified only when exam is in DRAFT state");
         }
+        */
 
         ExamSettings settings = examSettingsRepository.findByExamId(examId)
                 .orElseThrow(() ->

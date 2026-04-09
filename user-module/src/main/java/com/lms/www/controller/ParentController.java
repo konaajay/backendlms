@@ -16,7 +16,7 @@ import com.lms.www.repository.ParentStudentRelationRepository;
 import com.lms.www.repository.UserRepository;
 
 @RestController
-@RequestMapping("/parent")
+@RequestMapping("/api/parent")
 public class ParentController {
 
     private final ParentRepository parentRepository;

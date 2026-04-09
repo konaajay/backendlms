@@ -9,4 +9,6 @@ import com.lms.www.management.model.Course;
 public interface CourseRepository extends JpaRepository<Course, Long> {
 
     Optional<Course> findByShareCode(String shareCode);
+    Optional<Course> findByCourseTitle(String courseTitle);
+    Optional<Course> findByCourseName(String courseName);
 }

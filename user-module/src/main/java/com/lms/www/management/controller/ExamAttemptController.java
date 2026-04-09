@@ -29,7 +29,7 @@ public class ExamAttemptController {
         }
 
         @PostMapping("/start")
-        @PreAuthorize("hasAnyAuthority('EXAM_VIEW', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+        @PreAuthorize("hasAnyAuthority('EXAM_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR', 'ROLE_STUDENT')")
         public ResponseEntity<ExamAttempt> startAttempt(
                         @PathVariable Long examId,
                         Authentication authentication) {
@@ -41,7 +41,7 @@ public class ExamAttemptController {
         }
 
         @PostMapping("/{attemptId}/submit")
-        @PreAuthorize("hasAnyAuthority('EXAM_VIEW', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+        @PreAuthorize("hasAnyAuthority('EXAM_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR', 'ROLE_STUDENT')")
         public ResponseEntity<ExamAttempt> submitAttempt(
                         @PathVariable Long attemptId,
                         Authentication authentication) {
@@ -57,7 +57,7 @@ public class ExamAttemptController {
         }
 
         @PostMapping("/{attemptId}/auto-submit")
-        @PreAuthorize("hasAnyAuthority('EXAM_VIEW', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+        @PreAuthorize("hasAnyAuthority('EXAM_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR', 'ROLE_STUDENT')")
         public ResponseEntity<ExamAttempt> autoSubmitAttempt(
                         @PathVariable Long attemptId,
                         Authentication authentication) {
@@ -73,7 +73,7 @@ public class ExamAttemptController {
         }
 
         @PostMapping("/{attemptId}/evaluate")
-        @PreAuthorize("hasAnyAuthority('EXAM_RESPONSE_EVALUATE', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+        @PreAuthorize("hasAnyAuthority('EXAM_RESPONSE_EVALUATE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
         public ResponseEntity<?> evaluateAttempt(
                         @PathVariable Long attemptId) {
 
@@ -84,7 +84,7 @@ public class ExamAttemptController {
         }
 
         @GetMapping("/{attemptId}")
-        @PreAuthorize("hasAnyAuthority('EXAM_ATTEMPT_VIEW', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+        @PreAuthorize("hasAnyAuthority('EXAM_ATTEMPT_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR', 'ROLE_STUDENT')")
         public ResponseEntity<ExamAttempt> getAttempt(
                         @PathVariable Long attemptId,
                         Authentication authentication) {
@@ -96,7 +96,7 @@ public class ExamAttemptController {
         }
 
         @GetMapping("/{attemptId}/result")
-        @PreAuthorize("hasAnyAuthority('EXAM_ATTEMPT_VIEW', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+        @PreAuthorize("hasAnyAuthority('EXAM_ATTEMPT_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR', 'ROLE_STUDENT')")
         public ResponseEntity<?> getResult(
                         @PathVariable Long attemptId,
                         Authentication authentication) {
@@ -107,8 +107,17 @@ public class ExamAttemptController {
                                 examAttemptService.getResult(attemptId, studentId));
         }
 
+        @GetMapping("/all")
+        @PreAuthorize("hasAnyAuthority('EXAM_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+        public ResponseEntity<java.util.List<ExamAttempt>> getAttemptsByExam(
+                        @PathVariable Long examId) {
+
+                return ResponseEntity.ok(
+                                examAttemptService.getAttemptsByExam(examId));
+        }
+
         @GetMapping("/{attemptId}/status")
-        @PreAuthorize("hasAnyAuthority('EXAM_ATTEMPT_VIEW', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+        @PreAuthorize("hasAnyAuthority('EXAM_ATTEMPT_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR', 'ROLE_STUDENT')")
         public ResponseEntity<?> getAttemptStatus(
                         @PathVariable Long attemptId,
                         Authentication authentication) {

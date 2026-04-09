@@ -18,4 +18,6 @@ public interface WebinarRepository extends JpaRepository<Webinar, Long> {
     List<Webinar> findByStatus(WebinarStatus status);
 
     List<Webinar> findByTrainerId(Long trainerId);
+
+    List<Webinar> findByTrainerIdAndStatus(Long trainerId, WebinarStatus status);
 }

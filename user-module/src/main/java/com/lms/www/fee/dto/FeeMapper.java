@@ -338,9 +338,13 @@ public class FeeMapper {
     public static PaymentLinkResponse toPaymentLinkResponse(StudentInstallmentPlan entity) {
         if (entity == null)
             return null;
+        
+        // Link points to frontend payment page
+        String paymentUrl = "http://localhost:5173/fee/pay/" + entity.getCashfreeOrderId();
+        
         return PaymentLinkResponse.builder()
                 .installmentId(entity.getId())
-                .paymentLink(entity.getPaymentSessionId())
+                .paymentLink(paymentUrl)
                 .success(true)
                 .build();
     }

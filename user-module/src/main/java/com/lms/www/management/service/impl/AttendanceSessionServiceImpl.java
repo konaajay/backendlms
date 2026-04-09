@@ -61,11 +61,17 @@ public class AttendanceSessionServiceImpl implements AttendanceSessionService {
                 }
 
                 attendanceSessionRepository
-                                .findBySessionIdAndStatus(sessionId, "ACTIVE")
+                                .findBySessionIdAndBatchId(sessionId, batchId)
                                 .ifPresent(a -> {
-                                        throw new ResponseStatusException(
-                                                        HttpStatus.CONFLICT,
-                                                        "Attendance already started for this session");
+                                        if ("ACTIVE".equals(a.getStatus())) {
+                                                throw new ResponseStatusException(
+                                                                HttpStatus.CONFLICT,
+                                                                "Attendance already started for this session");
+                                        } else {
+                                                throw new ResponseStatusException(
+                                                                HttpStatus.CONFLICT,
+                                                                "Attendance already completed for this session");
+                                        }
                                 });
 
                 AttendanceSession attendanceSession = new AttendanceSession();
@@ -94,10 +100,18 @@ public class AttendanceSessionServiceImpl implements AttendanceSessionService {
 
                 AttendanceSession saved = attendanceSessionRepository.save(attendanceSession);
 
-                // 🔹 ADDED (auto-mark absent students)
-                finalizeAbsentStudents(saved);
+                // Insulate session ending from post-processing failures
+                try {
+                    finalizeAbsentStudents(saved);
+                } catch (Exception e) {
+                    System.err.println("Failed to finalize absent students: " + e.getMessage());
+                }
 
-                checkAndTriggerAtRiskAlerts(saved);
+                try {
+                    checkAndTriggerAtRiskAlerts(saved);
+                } catch (Exception e) {
+                    System.err.println("Failed to trigger at-risk alerts: " + e.getMessage());
+                }
 
                 return saved;
         }
@@ -132,6 +146,7 @@ public class AttendanceSessionServiceImpl implements AttendanceSessionService {
                                 record.setRemarks("Did not join session");
                                 record.setMarkedAt(session.getEndedAt());
                                 record.setMarkedBy(session.getCreatedBy());
+                                record.setBatchId(batchId);
 
                                 attendanceRecordRepository.save(record);
 
@@ -248,6 +263,15 @@ public class AttendanceSessionServiceImpl implements AttendanceSessionService {
 
                 return attendanceSessionRepository
                                 .findByStartedAtBetween(start, end);
+        }
+
+        // ===============================
+        // BATCH BASED
+        // ===============================
+        @Override
+        @Transactional(readOnly = true)
+        public List<AttendanceSession> getByBatch(Long batchId) {
+                return attendanceSessionRepository.findByBatchIdOrderByStartedAtDesc(batchId);
         }
 
         // ===============================

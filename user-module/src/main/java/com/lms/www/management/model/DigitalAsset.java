@@ -70,6 +70,9 @@ public class DigitalAsset {
     @Column(name = "remarks", columnDefinition = "TEXT")
     private String remarks; // ✅ NEW
 
+    @Column(name = "auto_reclaim")
+    private Boolean autoReclaim; // ✅ NEW
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 

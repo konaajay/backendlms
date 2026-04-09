@@ -23,4 +23,5 @@ public class StudentExamAttemptResultDTO {
     private Integer totalMarks;
     private Double percentage;
     private Boolean isPassed;
+    private java.util.List<com.lms.www.management.model.ExamResponse> responses;
 }

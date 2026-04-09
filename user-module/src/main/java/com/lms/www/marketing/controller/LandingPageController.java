@@ -17,7 +17,7 @@ import jakarta.validation.Valid;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/marketing/landing")
+@RequestMapping("/api/v1/marketing/public/landing")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class LandingPageController {

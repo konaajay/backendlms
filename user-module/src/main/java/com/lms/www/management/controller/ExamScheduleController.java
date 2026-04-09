@@ -29,7 +29,7 @@ public class ExamScheduleController {
 
     // CREATE SCHEDULE
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('EXAM_SCHEDULE_CREATE', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @PreAuthorize("hasAnyAuthority('EXAM_SCHEDULE_CREATE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<ExamSchedule> createSchedule(@RequestBody ExamSchedule schedule) {
         return new ResponseEntity<>(
                 scheduleService.createSchedule(schedule),
@@ -39,7 +39,7 @@ public class ExamScheduleController {
 
     // GET BY ID
     @GetMapping("/{scheduleId}")
-    @PreAuthorize("hasAnyAuthority('EXAM_SCHEDULE_VIEW', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @PreAuthorize("hasAnyAuthority('EXAM_SCHEDULE_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<ExamSchedule> getSchedule(@PathVariable Long scheduleId) {
         return ResponseEntity.ok(
                 scheduleService.getScheduleById(scheduleId)
@@ -48,7 +48,7 @@ public class ExamScheduleController {
 
     // GET BY EXAM
     @GetMapping("/exam/{examId}")
-    @PreAuthorize("hasAnyAuthority('EXAM_SCHEDULE_VIEW', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @PreAuthorize("hasAnyAuthority('EXAM_SCHEDULE_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<List<ExamSchedule>> getSchedulesByExam(@PathVariable Long examId) {
         return ResponseEntity.ok(
                 scheduleService.getSchedulesByExamId(examId)
@@ -57,7 +57,7 @@ public class ExamScheduleController {
 
     // GET BY COURSE
     @GetMapping("/course/{courseId}")
-    @PreAuthorize("hasAnyAuthority('EXAM_SCHEDULE_VIEW', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @PreAuthorize("hasAnyAuthority('EXAM_SCHEDULE_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<List<ExamSchedule>> getSchedulesByCourse(@PathVariable Long courseId) {
         return ResponseEntity.ok(
                 scheduleService.getSchedulesByCourseId(courseId)
@@ -66,7 +66,7 @@ public class ExamScheduleController {
 
     // GET BY BATCH
     @GetMapping("/batch/{batchId}")
-    @PreAuthorize("hasAnyAuthority('EXAM_SCHEDULE_VIEW', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @PreAuthorize("hasAnyAuthority('EXAM_SCHEDULE_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<List<ExamSchedule>> getSchedulesByBatch(@PathVariable Long batchId) {
         return ResponseEntity.ok(
                 scheduleService.getSchedulesByBatchId(batchId)
@@ -75,20 +75,20 @@ public class ExamScheduleController {
 
     // DEACTIVATE SCHEDULE (SOFT DELETE)
     @DeleteMapping("/{scheduleId}")
-    @PreAuthorize("hasAnyAuthority('EXAM_SCHEDULE_DELETE', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @PreAuthorize("hasAnyAuthority('EXAM_SCHEDULE_DELETE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<Void> deactivateSchedule(@PathVariable Long scheduleId) {
         scheduleService.deactivateSchedule(scheduleId);
         return ResponseEntity.noContent().build();
     }
     
     @GetMapping("/deactivated")
-    @PreAuthorize("hasAnyAuthority('EXAM_SCHEDULE_VIEW', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @PreAuthorize("hasAnyAuthority('EXAM_SCHEDULE_VIEW', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<List<ExamSchedule>> getDeactivatedSchedules() {
         return ResponseEntity.ok(scheduleService.getDeactivatedSchedules());
     }
     
     @PutMapping("/{scheduleId}/restore")
-    @PreAuthorize("hasAnyAuthority('EXAM_SCHEDULE_RESTORE', 'ROLE_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
+    @PreAuthorize("hasAnyAuthority('EXAM_SCHEDULE_RESTORE', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN', 'ALL_PERMISSIONS', 'ROLE_INSTRUCTOR')")
     public ResponseEntity<Void> restoreSchedule(@PathVariable Long scheduleId) {
         scheduleService.restoreSchedule(scheduleId);
         return ResponseEntity.noContent().build();

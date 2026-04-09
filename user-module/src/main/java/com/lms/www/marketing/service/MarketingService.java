@@ -1,15 +1,21 @@
 package com.lms.www.marketing.service;
 
-import com.lms.www.affiliate.repository.AffiliateRepository;
 import com.lms.www.affiliate.entity.AffiliateClick;
-import com.lms.www.marketing.model.Lead;
 import com.lms.www.affiliate.repository.AffiliateClickRepository;
+import com.lms.www.affiliate.repository.AffiliateRepository;
+import com.lms.www.marketing.model.Lead;
 import com.lms.www.marketing.repository.LeadRepository;
+import com.lms.www.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.lms.www.management.model.Course;
+import com.lms.www.management.model.Batch;
+import com.lms.www.management.repository.CourseRepository;
+import com.lms.www.management.repository.BatchRepository;
+import com.lms.www.affiliate.service.AffiliateLeadService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,6 +29,9 @@ public class MarketingService {
     private final AffiliateClickRepository clickRepository;
     private final LeadRepository leadRepository;
     private final EmailService emailService;
+    private final AffiliateLeadService affiliateLeadService;
+    private final CourseRepository courseRepository;
+    private final BatchRepository batchRepository;
 
     // ================= TRACK CLICK =================
     public void trackClick(String code, String source, String ip) {
@@ -57,24 +66,69 @@ public class MarketingService {
 
     // ================= CREATE LEAD =================
     @Transactional
-    public void createLead(String email, String mobile, Long batchId) {
+    public void createLead(String name, String email, String phone, Long batchId, String referralCode) {
+        createMarketingLead(name, email, phone, "Default Course", referralCode, null, null, referralCode);
+    }
 
-        if (email == null || mobile == null) {
+    @Transactional
+    public void createMarketingLead(String name, String email, String phone, String courseInterest, 
+                                   String utmSource, String utmMedium, String utmCampaign, String referralCode) {
+
+        if (email == null || phone == null) {
             throw new IllegalArgumentException("Invalid lead data");
         }
 
-        if (leadRepository.existsByEmailAndBatchId(email, batchId)) {
-            throw new IllegalStateException("Duplicate lead");
+        if (leadRepository.existsByEmailAndUtmCampaign(email, utmCampaign)) {
+            // Already a lead for this campaign
+            return;
         }
 
         Lead lead = Lead.builder()
+                .name(name)
                 .email(email)
-                .mobile(mobile)
-                .batchId(batchId)
+                .phone(phone)
+                .mobile(phone) 
+                .courseInterest(courseInterest)
+                .source(utmSource)
+                .utmSource(utmSource)
+                .utmMedium(utmMedium)
+                .utmCampaign(utmCampaign)
+                .referralCode(referralCode)
                 .createdAt(LocalDateTime.now())
                 .build();
 
         leadRepository.save(lead);
+        log.info("Marketing Lead captured: email={}, name={}, utmCampaign={}", email, name, utmCampaign);
+
+        // ✅ Bridge to Affiliate Module
+        if (referralCode != null && referralCode.startsWith("AFF-")) {
+            try {
+                // Find courseId from courseInterest (String)
+                Course course = courseRepository.findByCourseTitle(courseInterest)
+                        .orElseGet(() -> courseRepository.findByCourseName(courseInterest).orElse(null));
+                
+                if (course != null) {
+                    Long courseId = course.getCourseId();
+                    // Find first active batch for this course
+                    Long batchId = batchRepository.findByCourseId(courseId).stream()
+                            .filter(b -> "ACTIVE".equals(b.getStatus()) || "Upcoming".equals(b.getStatus()) || "Running".equals(b.getStatus()))
+                            .map(Batch::getBatchId)
+                            .findFirst()
+                            .orElse(null);
+                            
+                    if (batchId != null) {
+                        affiliateLeadService.createLead(name, phone, email, courseId, batchId, referralCode, null);
+                        log.info("Affiliate Lead synced for code: {}", referralCode);
+                    } else {
+                        log.warn("No active batch found for course {} - Lead not synced to affiliate", courseInterest);
+                    }
+                } else {
+                    log.warn("Course Interest '{}' not found in database - Lead not synced to affiliate", courseInterest);
+                }
+            } catch (Exception e) {
+                log.error("Failed to bridge lead to affiliate module: {}", e.getMessage());
+            }
+        }
     }
 
     // ================= BULK EMAIL =================

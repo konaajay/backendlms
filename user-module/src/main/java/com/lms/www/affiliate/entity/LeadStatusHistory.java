@@ -16,14 +16,16 @@ public class LeadStatusHistory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "lead_id", nullable = false)
     private Long leadId;
 
+    @Column(name = "old_status")
     private String oldStatus;
 
-    @Column(nullable = false)
+    @Column(name = "new_status", nullable = false)
     private String newStatus;
 
+    @Column(name = "changed_by")
     private String changedBy;
 
     private String notes;

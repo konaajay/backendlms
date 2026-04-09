@@ -102,6 +102,9 @@ public class Books {
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;
 
+	@Column(name = "created_by")
+	private String createdBy;
+
 	@Column(name = "updated_at", nullable = false)
 	private LocalDateTime updatedAt;
 
@@ -172,6 +175,8 @@ public class Books {
 	public void setBarcodes(List<BookBarcode> barcodes) { this.barcodes = barcodes; }
 	public LocalDateTime getCreatedAt() { return createdAt; }
 	public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+	public String getCreatedBy() { return createdBy; }
+	public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
 	public LocalDateTime getUpdatedAt() { return updatedAt; }
 	public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 

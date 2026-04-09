@@ -1,6 +1,8 @@
 package com.lms.www.management.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Table(
@@ -9,6 +11,7 @@ import jakarta.persistence.*;
         @UniqueConstraint(columnNames = "exam_id")
     }
 )
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ExamNotification {
 
     @Id
@@ -20,13 +23,16 @@ public class ExamNotification {
     private Long examId;
 
     @Column(name = "scheduled_notification", nullable = false)
+    @JsonProperty("scheduled_notification")
     private Boolean scheduledNotification;
 
     // NONE / 1H / 24H
     @Column(name = "reminder_before", nullable = false)
+    @JsonProperty("reminder_before")
     private String reminderBefore;
 
     @Column(name = "feedback_after_exam", nullable = false)
+    @JsonProperty("feedback_after_exam")
     private Boolean feedbackAfterExam;
 
     public ExamNotification() {}
