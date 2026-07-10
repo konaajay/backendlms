@@ -69,7 +69,7 @@ public class AffiliateLeadServiceImpl implements AffiliateLeadService {
     private final StudentBatchService studentBatchService;
     private final StudentRepository studentRepository;
     private final UserRepository userRepository;
-    
+
     private final ObjectProvider<StudentFeeAllocationService> allocationServiceProvider;
     private final ObjectProvider<StructureService> structureServiceProvider;
 
@@ -83,18 +83,19 @@ public class AffiliateLeadServiceImpl implements AffiliateLeadService {
         // I will keep the logic same but wrap the save result in mapToDTO
 
         // Rate limiting
-        if (ipAddress != null) {
-            LocalDateTime lastRequest = ipRequestMap.get(ipAddress);
-            if (lastRequest != null && lastRequest.plusMinutes(1).isAfter(LocalDateTime.now())) {
-                throw new RuntimeException("Too many requests. Please try again after a minute.");
-            }
-            ipRequestMap.put(ipAddress, LocalDateTime.now());
+        String rateLimitKey = (ipAddress != null ? ipAddress : "NO_IP") + "_" + mobile + "_"
+                + (email != null ? email : "NO_EMAIL");
+        LocalDateTime lastRequest = ipRequestMap.get(rateLimitKey);
+        if (lastRequest != null && lastRequest.plusMinutes(1).isAfter(LocalDateTime.now())) {
+            throw new RuntimeException("Too many requests. Please try again after a minute.");
         }
+        ipRequestMap.put(rateLimitKey, LocalDateTime.now());
 
         Optional<AffiliateLead> existing = leadRepository.findByMobileAndBatchId(mobile, batchId);
         if (existing.isPresent()) {
-            log.warn("[LeadService] DUPLICATE LEAD: Mobile {} for batch {} already assigned to affiliate ID: {}", 
-                mobile, batchId, existing.get().getAffiliate() != null ? existing.get().getAffiliate().getId() : "NONE");
+            log.warn("[LeadService] DUPLICATE LEAD: Mobile {} for batch {} already assigned to affiliate ID: {}",
+                    mobile, batchId,
+                    existing.get().getAffiliate() != null ? existing.get().getAffiliate().getId() : "NONE");
             return mapToDTO(existing.get());
         }
 
@@ -117,27 +118,20 @@ public class AffiliateLeadServiceImpl implements AffiliateLeadService {
             finalBatchId = link.getBatchId();
             linkId = link.getId();
         } else {
-            log.info("[LeadService] Looking up affiliate for referralCode: {}", referralCode);
-            affiliate = affiliateRepository.findByReferralCode(referralCode)
-                    .orElseThrow(() -> {
-                        log.error("[LeadService] REJECTED: Invalid referral code {}", referralCode);
-                        return new RuntimeException("Invalid referral code or link: " + referralCode);
-                    });
-
-            if (finalCourseId == null || finalBatchId == null) {
-                log.error("[LeadService] REJECTED: Missing course/batch for code {}", referralCode);
-                throw new RuntimeException("Course ID and Batch ID are required for direct affiliate referrals.");
-            }
+            // Stop silent fallback
+            log.error("[LeadService] REJECTED: Invalid referral code or no active link found for {}", referralCode);
+            throw new RuntimeException("Referral code must be from an active affiliate link.");
         }
 
-        log.info("[LeadService] Attributing lead to Affiliate ID: {}, Name: {}, Code: {}", 
-            affiliate.getId(), affiliate.getName(), affiliate.getReferralCode());
+        log.info("[LeadService] Attributing lead to Affiliate ID: {}, Name: {}, Code: {}",
+                affiliate.getId(), affiliate.getName(), affiliate.getReferralCode());
 
         if (affiliate.getStatus() != AffiliateStatus.ACTIVE) {
             throw new RuntimeException("Affiliate partner is currently inactive.");
         }
 
-        if (email != null && email.equalsIgnoreCase(affiliate.getEmail())) {
+        if ((email != null && email.equalsIgnoreCase(affiliate.getEmail())) ||
+                (mobile != null && mobile.equals(affiliate.getMobile()))) {
             throw new RuntimeException("Self-referral is not allowed.");
         }
 
@@ -154,15 +148,27 @@ public class AffiliateLeadServiceImpl implements AffiliateLeadService {
                 .expiresAt(LocalDateTime.now().plusDays(30))
                 .build();
 
-        AffiliateLead savedLead = leadRepository.save(lead);
-        log.info("[LeadService] SUCCESSFULLY Saved Lead ID: {} for affiliate: {}", savedLead.getId(), affiliate.getName());
-
-        // Trigger community join
+        AffiliateLead savedLead;
         try {
-            communityService.addLeadToCommunity(savedLead.getId(), savedLead.getCourseId(), savedLead.getBatchId());
-        } catch (Exception e) {
-            log.error("Failed to add affiliate lead to community: {}", e.getMessage());
+            savedLead = leadRepository.save(lead);
+            log.info("[LeadService] SUCCESSFULLY Saved Lead ID: {} for affiliate: {}", savedLead.getId(),
+                    affiliate.getName());
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            log.warn("[LeadService] DUPLICATE LEAD CAUGHT IN DB: Mobile {} for batch {}", mobile, finalBatchId);
+            return mapToDTO(leadRepository.findByMobileAndBatchId(mobile, finalBatchId).orElseThrow());
         }
+
+        // Trigger community join asynchronously
+        final Long finalSavedLeadId = savedLead.getId();
+        final Long finalCourseIdForAsync = savedLead.getCourseId();
+        final Long finalBatchIdForAsync = savedLead.getBatchId();
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                communityService.addLeadToCommunity(finalSavedLeadId, finalCourseIdForAsync, finalBatchIdForAsync);
+            } catch (Exception e) {
+                log.error("Failed to add affiliate lead to community: {}", e.getMessage());
+            }
+        });
 
         return mapToDTO(savedLead);
     }
@@ -247,7 +253,8 @@ public class AffiliateLeadServiceImpl implements AffiliateLeadService {
                         .batchId(l.getBatchId())
                         .affiliateId(l.getAffiliate() != null ? l.getAffiliate().getId() : null)
                         .affiliateName(l.getAffiliate() != null ? l.getAffiliate().getName() : null)
-                        .referralCode(l.getAffiliate() != null ? l.getAffiliate().getReferralCode() : null)
+                        .referralCode(l.getReferralCode() != null ? l.getReferralCode()
+                                : (l.getAffiliate() != null ? l.getAffiliate().getReferralCode() : null))
                         .linkId(l.getLinkId())
                         .status(l.getStatus() != null ? l.getStatus().name() : null)
                         .leadSource(l.getLeadSource())
@@ -291,7 +298,8 @@ public class AffiliateLeadServiceImpl implements AffiliateLeadService {
 
     @Override
     public AffiliateLeadDTO getLeadByEmailAndBatch(String email, Long batchId) {
-        return leadRepository.findByEmailAndBatchId(email, batchId)
+        // Find the latest lead by email to allow global course discounts even if batch doesn't match
+        return leadRepository.findFirstByEmailOrderByCreatedAtDesc(email)
                 .map(this::mapToDTO)
                 .orElse(null);
     }
@@ -305,7 +313,7 @@ public class AffiliateLeadServiceImpl implements AffiliateLeadService {
         lead.setName(request.getName());
         lead.setEmail(request.getEmail());
         lead.setMobile(request.getMobile());
-        
+
         if (request.getStatus() != null) {
             lead.setStatus(AffiliateLead.LeadStatus.valueOf(request.getStatus()));
         }
@@ -313,7 +321,7 @@ public class AffiliateLeadServiceImpl implements AffiliateLeadService {
         AffiliateLead saved = leadRepository.save(lead);
         return mapToDTO(saved);
     }
-    
+
     @Override
     @Transactional
     public AffiliateLeadDTO convertToStudent(Long leadId, HttpServletRequest httpRequest) {
@@ -327,7 +335,7 @@ public class AffiliateLeadServiceImpl implements AffiliateLeadService {
         // 1. Fetch related data
         Batch batch = batchRepository.findById(lead.getBatchId())
                 .orElseThrow(() -> new RuntimeException("Batch not found for ID: " + lead.getBatchId()));
-                
+
         // Robust user ID extraction
         Long adminIdVal;
         try {
@@ -343,12 +351,14 @@ public class AffiliateLeadServiceImpl implements AffiliateLeadService {
             requestAdminUser = userRepository.findById(adminId)
                     .orElseThrow(() -> new RuntimeException("Admin context not found (ID: " + adminId + ")"));
         } else {
-            // If ID extraction fails, try by email which is usually standard in Authentication
-            String adminEmail = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+            // If ID extraction fails, try by email which is usually standard in
+            // Authentication
+            String adminEmail = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                    .getAuthentication().getName();
             requestAdminUser = userRepository.findByEmail(adminEmail)
                     .orElseThrow(() -> new RuntimeException("Admin context not found (Email: " + adminEmail + ")"));
         }
-        
+
         // 2. Prepare Student Request
         StudentRequest studentReq = new StudentRequest();
         String[] nameParts = lead.getName().split(" ", 2);
@@ -359,7 +369,7 @@ public class AffiliateLeadServiceImpl implements AffiliateLeadService {
         studentReq.setRoleName("ROLE_STUDENT");
         studentReq.setDob(LocalDate.of(2000, 1, 1)); // Default for now
         studentReq.setGender("Other"); // Default
-        
+
         // Generate secure random password
         String rawPassword = UUID.randomUUID().toString().replaceAll("-", "").substring(0, 10);
         studentReq.setPassword(rawPassword);
@@ -378,24 +388,26 @@ public class AffiliateLeadServiceImpl implements AffiliateLeadService {
         try {
             StructureService structureService = structureServiceProvider.getIfAvailable();
             StudentFeeAllocationService allocationService = allocationServiceProvider.getIfAvailable();
-            
+
             if (structureService != null && allocationService != null) {
                 // Find potential fee structures for this batch
                 List<FeeStructureResponse> structures = structureService.getStructuresByBatch(batch.getBatchId());
                 if (!structures.isEmpty()) {
                     FeeStructureResponse structure = structures.get(0); // Take first active structure
-                    
+
                     CreateAllocationRequest allocReq = new CreateAllocationRequest();
                     allocReq.setUserId(newUser.getUserId());
                     allocReq.setFeeStructureId(structure.getId());
                     allocReq.setAdminDiscount(BigDecimal.ZERO); // Default
                     allocReq.setAdditionalDiscount(BigDecimal.ZERO);
                     allocReq.setAffiliateDiscount(null); // Force auto-calculation from Lead
-                    
-                    // Trigger Full Fee Engine: This handles Allocation, Enrollment, and Sale/Commission
+
+                    // Trigger Full Fee Engine: This handles Allocation, Enrollment, and
+                    // Sale/Commission
                     allocationService.create(allocReq);
                     feeAllocated = true;
-                    log.info("[LeadConversion] Successfully automated fee allocation for student {}", newUser.getEmail());
+                    log.info("[LeadConversion] Successfully automated fee allocation for student {}",
+                            newUser.getEmail());
                 }
             }
         } catch (Exception e) {
@@ -418,14 +430,18 @@ public class AffiliateLeadServiceImpl implements AffiliateLeadService {
 
             // 5b. Calculate and Record Commission
             Affiliate affiliate = lead.getAffiliate();
-            
+
             BigDecimal originalAmount = batch.getFee() != null ? BigDecimal.valueOf(batch.getFee()) : BigDecimal.ZERO;
-            BigDecimal discountAmount = affiliate.getStudentDiscountValue() != null ? affiliate.getStudentDiscountValue() : BigDecimal.ZERO;
+            BigDecimal discountAmount = affiliate.getStudentDiscountValue() != null
+                    ? affiliate.getStudentDiscountValue()
+                    : BigDecimal.ZERO;
             BigDecimal orderAmount = originalAmount.subtract(discountAmount);
-            if (orderAmount.compareTo(BigDecimal.ZERO) < 0) orderAmount = BigDecimal.ZERO;
+            if (orderAmount.compareTo(BigDecimal.ZERO) < 0)
+                orderAmount = BigDecimal.ZERO;
 
             BigDecimal commissionAmount = BigDecimal.ZERO;
-            if (affiliate.getCommissionValue() != null && affiliate.getCommissionValue().compareTo(BigDecimal.ZERO) > 0) {
+            if (affiliate.getCommissionValue() != null
+                    && affiliate.getCommissionValue().compareTo(BigDecimal.ZERO) > 0) {
                 commissionAmount = orderAmount.multiply(affiliate.getCommissionValue()).divide(BigDecimal.valueOf(100));
             }
 
@@ -442,7 +458,7 @@ public class AffiliateLeadServiceImpl implements AffiliateLeadService {
                     .commissionAmount(commissionAmount)
                     .status(AffiliateSale.SaleStatus.APPROVED) // Auto approve for now
                     .build();
-                    
+
             affiliateSaleRepository.save(sale);
 
             // 5c. Update Lead Status
@@ -472,13 +488,23 @@ public class AffiliateLeadServiceImpl implements AffiliateLeadService {
                 .batchId(l.getBatchId())
                 .affiliateId(l.getAffiliate() != null ? l.getAffiliate().getId() : null)
                 .affiliateName(l.getAffiliate() != null ? l.getAffiliate().getName() : null)
-                .referralCode(l.getAffiliate() != null ? l.getAffiliate().getReferralCode() : null)
+                .referralCode(l.getReferralCode() != null ? l.getReferralCode()
+                        : (l.getAffiliate() != null ? l.getAffiliate().getReferralCode() : null))
                 .linkId(l.getLinkId())
                 .status(l.getStatus() != null ? l.getStatus().name() : null)
                 .leadSource(l.getLeadSource())
                 .ipAddress(l.getIpAddress())
                 .createdAt(l.getCreatedAt())
                 .studentDiscountValue(l.getAffiliate() != null ? l.getAffiliate().getStudentDiscountValue() : null)
+                .expiresAt(l.getExpiresAt())
+                .discountApplied(l.isDiscountApplied())
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public boolean markDiscountApplied(Long leadId) {
+        int updatedRows = leadRepository.atomicMarkDiscountApplied(leadId);
+        return updatedRows > 0;
     }
 }

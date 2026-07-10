@@ -82,6 +82,9 @@ public class Course {
     private String shareLink;
 
     @Transient
+    private Boolean isBookmarked;
+
+    @Transient
     private List<Topic> topics;
 
     // ===============================

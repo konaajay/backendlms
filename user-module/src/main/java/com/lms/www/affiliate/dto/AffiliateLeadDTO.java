@@ -19,6 +19,8 @@ public class AffiliateLeadDTO {
     private String ipAddress;
     private LocalDateTime createdAt;
     private BigDecimal studentDiscountValue;
+    private LocalDateTime expiresAt;
+    private boolean discountApplied;
 
     public AffiliateLeadDTO() {}
 
@@ -53,6 +55,10 @@ public class AffiliateLeadDTO {
     public void setCreatedAt(LocalDateTime dt) { this.createdAt = dt; }
     public java.math.BigDecimal getStudentDiscountValue() { return studentDiscountValue; }
     public void setStudentDiscountValue(java.math.BigDecimal val) { this.studentDiscountValue = val; }
+    public LocalDateTime getExpiresAt() { return expiresAt; }
+    public void setExpiresAt(LocalDateTime dt) { this.expiresAt = dt; }
+    public boolean isDiscountApplied() { return discountApplied; }
+    public void setDiscountApplied(boolean b) { this.discountApplied = b; }
 
     // Manual Builder
     public static AffiliateLeadDTOBuilder builder() {
@@ -76,6 +82,8 @@ public class AffiliateLeadDTO {
         public AffiliateLeadDTOBuilder ipAddress(String i) { dto.ipAddress = i; return this; }
         public AffiliateLeadDTOBuilder createdAt(LocalDateTime d) { dto.createdAt = d; return this; }
         public AffiliateLeadDTOBuilder studentDiscountValue(java.math.BigDecimal v) { dto.studentDiscountValue = v; return this; }
+        public AffiliateLeadDTOBuilder expiresAt(LocalDateTime d) { dto.expiresAt = d; return this; }
+        public AffiliateLeadDTOBuilder discountApplied(boolean b) { dto.discountApplied = b; return this; }
         public AffiliateLeadDTO build() { return dto; }
     }
 }

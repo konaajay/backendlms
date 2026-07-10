@@ -69,6 +69,9 @@ public class AffiliateLead {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "discount_applied")
+    private boolean discountApplied = false;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

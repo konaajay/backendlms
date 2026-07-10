@@ -520,12 +520,14 @@ CREATE TABLE tenant_settings (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+DROP TABLE IF EXISTS `tenant_headers`;
 CREATE TABLE tenant_headers (
     tenant_header_id BIGINT PRIMARY KEY AUTO_INCREMENT,
     header_config JSON NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+DROP TABLE IF EXISTS `tenant_custom_pages`;
 CREATE TABLE tenant_custom_pages (
     tenant_custom_page_id BIGINT PRIMARY KEY AUTO_INCREMENT,
     title VARCHAR(255) NOT NULL,
@@ -537,6 +539,7 @@ CREATE TABLE tenant_custom_pages (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+DROP TABLE IF EXISTS `tenant_custom_page_sections`;
 CREATE TABLE tenant_custom_page_sections (
     tenant_custom_page_section_id BIGINT PRIMARY KEY AUTO_INCREMENT,
     tenant_custom_page_id BIGINT NOT NULL,
@@ -551,6 +554,7 @@ CREATE TABLE tenant_custom_page_sections (
         ON DELETE CASCADE
 );
 
+DROP TABLE IF EXISTS `community_spaces`;
 CREATE TABLE community_spaces (
 space_id BIGINT AUTO_INCREMENT PRIMARY KEY,
 space_name VARCHAR(255) NOT NULL,
@@ -559,6 +563,7 @@ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 updated_at TIMESTAMP NULL
 );
 
+DROP TABLE IF EXISTS `community_channels`;
 CREATE TABLE community_channels (
 channel_id BIGINT AUTO_INCREMENT PRIMARY KEY,
 space_id BIGINT NOT NULL,
@@ -569,6 +574,7 @@ admins_only BOOLEAN DEFAULT FALSE,
 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+DROP TABLE IF EXISTS `community_threads`;
 CREATE TABLE community_threads (
 thread_id BIGINT AUTO_INCREMENT PRIMARY KEY,
 channel_id BIGINT NOT NULL,
@@ -582,6 +588,7 @@ is_pinned BOOLEAN DEFAULT FALSE,
 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+DROP TABLE IF EXISTS `community_replies`;
 CREATE TABLE community_replies (
 reply_id BIGINT AUTO_INCREMENT PRIMARY KEY,
 thread_id BIGINT,
@@ -595,6 +602,7 @@ is_answer BOOLEAN DEFAULT FALSE,
 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+DROP TABLE IF EXISTS `community_reactions`;
 CREATE TABLE community_reactions (
 reaction_id BIGINT AUTO_INCREMENT PRIMARY KEY,
 thread_id BIGINT,
@@ -604,6 +612,7 @@ reaction_type VARCHAR(50),
 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+DROP TABLE IF EXISTS `community_bookmarks`;
 CREATE TABLE community_bookmarks (
 bookmark_id BIGINT AUTO_INCREMENT PRIMARY KEY,
 thread_id BIGINT,
@@ -611,6 +620,7 @@ user_id BIGINT,
 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+DROP TABLE IF EXISTS `community_mentions`;
 CREATE TABLE community_mentions (
 mention_id BIGINT AUTO_INCREMENT PRIMARY KEY,
 thread_id BIGINT,
@@ -619,6 +629,7 @@ mentioned_user_id BIGINT,
 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+DROP TABLE IF EXISTS `community_notifications`;
 CREATE TABLE community_notifications (
 notification_id BIGINT AUTO_INCREMENT PRIMARY KEY,
 user_id BIGINT,
@@ -629,6 +640,7 @@ is_read BOOLEAN DEFAULT FALSE,
 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+DROP TABLE IF EXISTS `community_reports`;
 CREATE TABLE community_reports (
 report_id BIGINT AUTO_INCREMENT PRIMARY KEY,
 thread_id BIGINT,
@@ -639,6 +651,7 @@ status VARCHAR(20) DEFAULT 'OPEN',
 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+DROP TABLE IF EXISTS `community_channel_members`;
 CREATE TABLE community_channel_members (
     member_id BIGINT NOT NULL AUTO_INCREMENT,
     channel_id BIGINT NOT NULL,
@@ -650,6 +663,7 @@ CREATE TABLE community_channel_members (
     KEY idx_user_id (user_id)
 );
 
+DROP TABLE IF EXISTS `platform_settings`;
 CREATE TABLE platform_settings (
     platform_setting_id BIGINT PRIMARY KEY AUTO_INCREMENT,
     custom_domain VARCHAR(255),
@@ -669,6 +683,7 @@ CREATE TABLE platform_settings (
     footer_note TEXT
 );
 
+DROP TABLE IF EXISTS `tenant_security_settings`;
 CREATE TABLE tenant_security_settings (
     tenant_security_setting_id BIGINT PRIMARY KEY AUTO_INCREMENT,
     max_devices BIGINT NOT NULL DEFAULT 2,
@@ -682,6 +697,7 @@ CREATE TABLE tenant_security_settings (
     double_opt_in TINYINT(1) DEFAULT 0
 );
 
+DROP TABLE IF EXISTS `tenant_communication_settings`;
 CREATE TABLE tenant_communication_settings (
     tenant_communication_setting_id BIGINT PRIMARY KEY AUTO_INCREMENT,
     verification TINYINT(1) DEFAULT 1,
@@ -691,6 +707,7 @@ CREATE TABLE tenant_communication_settings (
     reply_to VARCHAR(255)
 );
 
+DROP TABLE IF EXISTS `general_settings`;
 CREATE TABLE general_settings (
     general_setting_id BIGINT PRIMARY KEY AUTO_INCREMENT,
     logo LONGTEXT,
@@ -699,6 +716,7 @@ CREATE TABLE general_settings (
     timezone VARCHAR(50) DEFAULT 'UTC'
 );
 
+DROP TABLE IF EXISTS `custom_user_fields`;
 CREATE TABLE custom_user_fields (
     custom_field_id BIGINT PRIMARY KEY AUTO_INCREMENT,
     field_key VARCHAR(100),
@@ -711,6 +729,7 @@ CREATE TABLE custom_user_fields (
 -- =========================
 -- AFFILIATES
 -- =========================
+DROP TABLE IF EXISTS `affiliates`;
 CREATE TABLE `affiliates` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
 
@@ -753,6 +772,7 @@ CREATE TABLE `affiliates` (
 -- =========================
 -- AFFILIATE CLICKS
 -- =========================
+DROP TABLE IF EXISTS `affiliate_clicks`;
 CREATE TABLE `affiliate_clicks` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
 
@@ -772,6 +792,7 @@ CREATE TABLE `affiliate_clicks` (
 -- =========================
 -- AFFILIATE LEADS
 -- =========================
+DROP TABLE IF EXISTS `affiliate_leads`;
 CREATE TABLE `affiliate_leads` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
 
@@ -809,6 +830,7 @@ CREATE TABLE `affiliate_leads` (
 -- =========================
 -- AFFILIATE LINKS
 -- =========================
+DROP TABLE IF EXISTS `affiliate_links`;
 CREATE TABLE `affiliate_links` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
 
@@ -842,6 +864,7 @@ CREATE TABLE `affiliate_links` (
 -- =========================
 -- AFFILIATE PAYOUTS
 -- =========================
+DROP TABLE IF EXISTS `affiliate_payouts`;
 CREATE TABLE `affiliate_payouts` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
 
@@ -866,6 +889,7 @@ CREATE TABLE `affiliate_payouts` (
 -- =========================
 -- AFFILIATE SALES
 -- =========================
+DROP TABLE IF EXISTS `affiliate_sales`;
 CREATE TABLE `affiliate_sales` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
 
@@ -906,6 +930,7 @@ CREATE TABLE `affiliate_sales` (
 -- =========================
 -- AFFILIATE WALLET
 -- =========================
+DROP TABLE IF EXISTS `affiliate_wallets`;
 CREATE TABLE `affiliate_wallets` (
   `id` BIGINT PRIMARY KEY,
 
@@ -926,6 +951,7 @@ CREATE TABLE `affiliate_wallets` (
 -- =========================
 -- AFFILIATE WALLET TRANSACTIONS
 -- =========================
+DROP TABLE IF EXISTS `affiliate_wallet_transactions`;
 CREATE TABLE `affiliate_wallet_transactions` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
 
@@ -950,6 +976,7 @@ CREATE TABLE `affiliate_wallet_transactions` (
 -- =========================
 -- COMMISSION RULES
 -- =========================
+DROP TABLE IF EXISTS `commission_rules`;
 CREATE TABLE `commission_rules` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
 
@@ -969,6 +996,7 @@ CREATE TABLE `commission_rules` (
 -- =========================
 -- LEAD NOTES
 -- =========================
+DROP TABLE IF EXISTS `lead_notes`;
 CREATE TABLE `lead_notes` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
 
@@ -982,6 +1010,7 @@ CREATE TABLE `lead_notes` (
 -- =========================
 -- LEAD STATUS HISTORY
 -- =========================
+DROP TABLE IF EXISTS `lead_status_history`;
 CREATE TABLE `lead_status_history` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
 
@@ -999,6 +1028,7 @@ CREATE TABLE `lead_status_history` (
 -- =========================
 -- WALLET CONFIG
 -- =========================
+DROP TABLE IF EXISTS `wallet_configs`;
 CREATE TABLE `wallet_configs` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
 
@@ -1012,6 +1042,7 @@ CREATE TABLE `wallet_configs` (
 -- =========================
 -- MARKETING LEADS
 -- =========================
+DROP TABLE IF EXISTS `leads`;
 CREATE TABLE `leads` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
   `name` VARCHAR(255),
@@ -1037,6 +1068,7 @@ CREATE TABLE `leads` (
 -- =========================
 -- TRACKED LINKS
 -- =========================
+DROP TABLE IF EXISTS `tracked_links`;
 CREATE TABLE `tracked_links` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
   `landingSlug` VARCHAR(255),
@@ -1052,6 +1084,7 @@ CREATE TABLE `tracked_links` (
 -- =========================
 -- LANDING PAGES
 -- =========================
+DROP TABLE IF EXISTS `landing_pages`;
 CREATE TABLE `landing_pages` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
   `slug` VARCHAR(255) UNIQUE,
@@ -2389,6 +2422,9 @@ CREATE TABLE `student_fee_allocations` (
 
   `applied_promo_code` VARCHAR(100),
   `promo_discount` DECIMAL(12,2),
+  
+  `affiliate_discount` DECIMAL(12,2) DEFAULT 0.00,
+  `affiliate_id` BIGINT,
 
   `installment_count` INT,
   `duration_months` INT,
@@ -2512,7 +2548,9 @@ DROP TABLE IF EXISTS `fee_system_settings`;
 CREATE TABLE `fee_system_settings` (
   `setting_key` VARCHAR(100) PRIMARY KEY,
   `setting_value` VARCHAR(255) NOT NULL,
-  `description` VARCHAR(255)
+  `description` VARCHAR(255),
+  `setting_type` VARCHAR(50) DEFAULT 'SYSTEM',
+  `is_active` BOOLEAN DEFAULT TRUE
 );
 -- =========================
 -- BOOK CATEGORIES
@@ -2731,6 +2769,7 @@ CREATE TABLE `library_fines` (
 -- =========================================
 -- DOCUMENT CATEGORIES
 -- =========================================
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS document_categories (
     category_id BIGINT NOT NULL AUTO_INCREMENT,
     category_name VARCHAR(100) NOT NULL,
@@ -2746,6 +2785,7 @@ CREATE TABLE IF NOT EXISTS document_categories (
 -- =========================================
 -- DOCUMENTS
 -- =========================================
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS documents (
     document_id BIGINT NOT NULL AUTO_INCREMENT,
     category_id BIGINT NOT NULL,
@@ -2770,6 +2810,7 @@ CREATE TABLE IF NOT EXISTS documents (
 -- =========================================
 -- DOCUMENT VERSIONS
 -- =========================================
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS document_versions (
     version_id BIGINT NOT NULL AUTO_INCREMENT,
     document_id BIGINT NOT NULL,
@@ -2788,6 +2829,7 @@ CREATE TABLE IF NOT EXISTS document_versions (
 -- =========================================
 -- DOCUMENT ACCESS LOGS
 -- =========================================
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS document_access_logs (
     log_id BIGINT NOT NULL AUTO_INCREMENT,
     document_id BIGINT NOT NULL,
@@ -2803,6 +2845,7 @@ CREATE TABLE IF NOT EXISTS document_access_logs (
 -- =========================================
 -- DOCUMENT SHARES
 -- =========================================
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS document_shares (
     share_id BIGINT NOT NULL AUTO_INCREMENT,
     document_id BIGINT NOT NULL,
@@ -2819,6 +2862,7 @@ CREATE TABLE IF NOT EXISTS document_shares (
 -- =========================================
 -- HOSTEL
 -- =========================================
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS hostel (
     hostel_id BIGINT NOT NULL AUTO_INCREMENT,
     hostel_name VARCHAR(255) NOT NULL,
@@ -2838,6 +2882,7 @@ CREATE TABLE IF NOT EXISTS hostel (
 -- =========================================
 -- HOSTEL ROOMS
 -- =========================================
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS hostel_rooms (
     room_id BIGINT NOT NULL AUTO_INCREMENT,
     room_number VARCHAR(100) NOT NULL,
@@ -2851,6 +2896,7 @@ CREATE TABLE IF NOT EXISTS hostel_rooms (
 -- =========================================
 -- HOSTEL ATTENDANCE
 -- =========================================
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS hostel_attendance (
     attendance_id BIGINT NOT NULL AUTO_INCREMENT,
     student_id BIGINT,
@@ -2869,6 +2915,7 @@ CREATE TABLE IF NOT EXISTS hostel_attendance (
 -- =========================================
 -- HOSTEL COMPLAINTS
 -- =========================================
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS hostel_complaints (
     complaint_id BIGINT NOT NULL AUTO_INCREMENT,
     student_id BIGINT,
@@ -2895,6 +2942,7 @@ CREATE TABLE IF NOT EXISTS hostel_complaints (
 -- =========================================
 -- MESS DAY MENU
 -- =========================================
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS mess_day_menu (
     menu_id BIGINT NOT NULL AUTO_INCREMENT,
     day VARCHAR(20),
@@ -2907,6 +2955,7 @@ CREATE TABLE IF NOT EXISTS mess_day_menu (
 -- =========================================
 -- STUDENT HEALTH INCIDENTS
 -- =========================================
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS student_health_incidents (
     incident_id BIGINT NOT NULL AUTO_INCREMENT,
     student_id BIGINT,
@@ -2935,6 +2984,7 @@ CREATE TABLE IF NOT EXISTS student_health_incidents (
 -- =========================================
 -- STUDENT HOSTEL ALLOCATIONS
 -- =========================================
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS student_hostel_allocations (
     allocation_id BIGINT NOT NULL AUTO_INCREMENT,
     student_id BIGINT NOT NULL,
@@ -2961,6 +3011,7 @@ CREATE TABLE IF NOT EXISTS student_hostel_allocations (
 -- =========================================
 -- STUDENT HOSTEL FEES
 -- =========================================
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS student_Hostel_fees (
     fee_id BIGINT NOT NULL AUTO_INCREMENT,
     student_id BIGINT,
@@ -2977,6 +3028,7 @@ CREATE TABLE IF NOT EXISTS student_Hostel_fees (
 -- =========================================
 -- STUDENT VISIT ENTRY
 -- =========================================
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS student_visit_entry (
     visit_id BIGINT NOT NULL AUTO_INCREMENT,
     student_id BIGINT,
@@ -2995,6 +3047,7 @@ CREATE TABLE IF NOT EXISTS student_visit_entry (
 -- =========================================
 -- BOOK CATEGORIES
 -- =========================================
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS book_categories (
     category_id BIGINT NOT NULL AUTO_INCREMENT,
     category_name VARCHAR(255) NOT NULL,
@@ -3009,6 +3062,7 @@ CREATE TABLE IF NOT EXISTS book_categories (
 -- =========================================
 -- BOOKS
 -- =========================================
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS books (
     book_id BIGINT NOT NULL AUTO_INCREMENT,
     title VARCHAR(255) NOT NULL,
@@ -3041,6 +3095,7 @@ CREATE TABLE IF NOT EXISTS books (
 -- =========================================
 -- BOOK BARCODES
 -- =========================================
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS book_barcodes (
     barcode_id BIGINT NOT NULL AUTO_INCREMENT,
     book_id BIGINT NOT NULL,
@@ -3057,6 +3112,7 @@ CREATE TABLE IF NOT EXISTS book_barcodes (
 -- =========================================
 -- BOOK ISSUE RECORDS
 -- =========================================
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS book_issue_records (
     issue_id BIGINT NOT NULL AUTO_INCREMENT,
     book_id BIGINT NOT NULL,
@@ -3079,6 +3135,7 @@ CREATE TABLE IF NOT EXISTS book_issue_records (
 -- =========================================
 -- BOOK RESERVATIONS
 -- =========================================
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS book_reservations (
     reservation_id BIGINT NOT NULL AUTO_INCREMENT,
     book_id BIGINT NOT NULL,
@@ -3098,6 +3155,7 @@ CREATE TABLE IF NOT EXISTS book_reservations (
         FOREIGN KEY (book_id) REFERENCES books(book_id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS library_settings (
     setting_id BIGINT NOT NULL AUTO_INCREMENT,
     max_books INT,
@@ -3110,6 +3168,7 @@ CREATE TABLE IF NOT EXISTS library_settings (
     PRIMARY KEY (setting_id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS fine_slabs (
     id BIGINT NOT NULL AUTO_INCREMENT,
     library_settings_id BIGINT NOT NULL,
@@ -3124,6 +3183,7 @@ CREATE TABLE IF NOT EXISTS fine_slabs (
         FOREIGN KEY (library_settings_id) REFERENCES library_settings(setting_id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS library_members (
     member_id BIGINT NOT NULL AUTO_INCREMENT,
     full_name VARCHAR(255) NOT NULL,
@@ -3142,6 +3202,7 @@ CREATE TABLE IF NOT EXISTS library_members (
     UNIQUE KEY uk_library_members_student_id (student_id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS library_fines (
     fine_id BIGINT NOT NULL AUTO_INCREMENT,
     issue_id BIGINT NOT NULL,
@@ -3155,6 +3216,7 @@ CREATE TABLE IF NOT EXISTS library_fines (
         FOREIGN KEY (issue_id) REFERENCES book_issue_records(issue_id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS automation_rules (
     id BIGINT NOT NULL AUTO_INCREMENT,
     name VARCHAR(255),
@@ -3166,6 +3228,7 @@ CREATE TABLE IF NOT EXISTS automation_rules (
     PRIMARY KEY (id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS blogs (
     id BIGINT NOT NULL AUTO_INCREMENT,
     title VARCHAR(255) NOT NULL,
@@ -3185,6 +3248,7 @@ CREATE TABLE IF NOT EXISTS blogs (
     UNIQUE KEY uk_blogs_slug (slug)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS blog_settings (
     id BIGINT NOT NULL AUTO_INCREMENT,
     home_head_script TEXT,
@@ -3196,6 +3260,7 @@ CREATE TABLE IF NOT EXISTS blog_settings (
     PRIMARY KEY (id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS marketing_campaign (
     id BIGINT NOT NULL AUTO_INCREMENT,
     campaign_name VARCHAR(255) NOT NULL,
@@ -3210,6 +3275,7 @@ CREATE TABLE IF NOT EXISTS marketing_campaign (
     PRIMARY KEY (id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS marketing_content (
     content_id INT NOT NULL AUTO_INCREMENT,
     content_title VARCHAR(150) NOT NULL,
@@ -3224,6 +3290,7 @@ CREATE TABLE IF NOT EXISTS marketing_content (
         FOREIGN KEY (campaign_id) REFERENCES marketing_campaign(id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS messenger_schedules (
     id BIGINT NOT NULL AUTO_INCREMENT,
     campaign_id BIGINT NOT NULL,
@@ -3247,6 +3314,7 @@ CREATE TABLE IF NOT EXISTS messenger_schedules (
         FOREIGN KEY (schedule_id) REFERENCES messenger_schedules(id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS campaign_analytics (
     id BIGINT NOT NULL AUTO_INCREMENT,
     campaign_id BIGINT,
@@ -3258,6 +3326,7 @@ CREATE TABLE IF NOT EXISTS campaign_analytics (
     PRIMARY KEY (id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS click_tracking (
     id BIGINT NOT NULL AUTO_INCREMENT,
     campaign_id BIGINT,
@@ -3267,6 +3336,7 @@ CREATE TABLE IF NOT EXISTS click_tracking (
     PRIMARY KEY (id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS customer (
     customer_id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
@@ -3279,6 +3349,7 @@ CREATE TABLE IF NOT EXISTS customer (
     UNIQUE KEY uk_customer_email (email)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS delivery_logs (
     id BIGINT NOT NULL AUTO_INCREMENT,
     campaign_id BIGINT,
@@ -3290,6 +3361,7 @@ CREATE TABLE IF NOT EXISTS delivery_logs (
     PRIMARY KEY (id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS promo_codes (
     id BIGINT NOT NULL AUTO_INCREMENT,
     code VARCHAR(255) NOT NULL,
@@ -3310,6 +3382,7 @@ CREATE TABLE IF NOT EXISTS promo_codes (
     UNIQUE KEY uk_promo_codes_code (code)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS promo_eligible_courses (
     promo_id BIGINT NOT NULL,
     course_id BIGINT,
@@ -3318,6 +3391,7 @@ CREATE TABLE IF NOT EXISTS promo_eligible_courses (
         FOREIGN KEY (promo_id) REFERENCES promo_codes(id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS referral_fraud_logs (
     id BIGINT NOT NULL AUTO_INCREMENT,
     user_id BIGINT,
@@ -3327,6 +3401,7 @@ CREATE TABLE IF NOT EXISTS referral_fraud_logs (
     PRIMARY KEY (id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS referral_settings (
     id BIGINT NOT NULL AUTO_INCREMENT,
     enabled BIT(1) DEFAULT b'0',
@@ -3337,6 +3412,7 @@ CREATE TABLE IF NOT EXISTS referral_settings (
     PRIMARY KEY (id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS route_way (
     id BIGINT NOT NULL AUTO_INCREMENT,
     route_code BIGINT,
@@ -3347,6 +3423,7 @@ CREATE TABLE IF NOT EXISTS route_way (
     PRIMARY KEY (id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS route_pickup_points (
     route_id BIGINT NOT NULL,
     pickup_point VARCHAR(255),
@@ -3355,6 +3432,7 @@ CREATE TABLE IF NOT EXISTS route_pickup_points (
         FOREIGN KEY (route_id) REFERENCES route_way(id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS route_drop_points (
     route_id BIGINT NOT NULL,
     drop_point VARCHAR(255),
@@ -3363,6 +3441,7 @@ CREATE TABLE IF NOT EXISTS route_drop_points (
         FOREIGN KEY (route_id) REFERENCES route_way(id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS Vehicles (
     id BIGINT NOT NULL AUTO_INCREMENT,
     vehicle_number VARCHAR(255) NOT NULL,
@@ -3380,6 +3459,7 @@ CREATE TABLE IF NOT EXISTS Vehicles (
         FOREIGN KEY (route_id) REFERENCES route_way(id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS conductors (
     conductor_id BIGINT NOT NULL AUTO_INCREMENT,
     conductor_name VARCHAR(255) NOT NULL,
@@ -3399,6 +3479,7 @@ CREATE TABLE IF NOT EXISTS conductors (
         FOREIGN KEY (vehicle_id) REFERENCES Vehicles(id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS drivers (
     driver_id BIGINT NOT NULL AUTO_INCREMENT,
     fullname VARCHAR(255) NOT NULL,
@@ -3430,6 +3511,7 @@ CREATE TABLE IF NOT EXISTS drivers (
         FOREIGN KEY (conductor_id) REFERENCES conductors(conductor_id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS fuel_log (
     id BIGINT NOT NULL AUTO_INCREMENT,
     vehicle_id VARCHAR(255) NOT NULL,
@@ -3441,6 +3523,7 @@ CREATE TABLE IF NOT EXISTS fuel_log (
     PRIMARY KEY (id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS student_transport_assignment (
     id BIGINT NOT NULL AUTO_INCREMENT,
     student_id BIGINT NOT NULL,
@@ -3458,6 +3541,7 @@ CREATE TABLE IF NOT EXISTS student_transport_assignment (
         FOREIGN KEY (route_id) REFERENCES route_way(id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS transport_attendance (
     id BIGINT NOT NULL AUTO_INCREMENT,
     student_id BIGINT NOT NULL,
@@ -3476,6 +3560,7 @@ CREATE TABLE IF NOT EXISTS transport_attendance (
         FOREIGN KEY (vehicle_id) REFERENCES Vehicles(id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS transport_fee_structure (
     id BIGINT NOT NULL AUTO_INCREMENT,
     route_id BIGINT NOT NULL,
@@ -3485,6 +3570,7 @@ CREATE TABLE IF NOT EXISTS transport_fee_structure (
     UNIQUE KEY uk_transport_fee_structure_route_id (route_id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS transport_payments (
     id VARCHAR(255) NOT NULL,
     student_id BIGINT NOT NULL,
@@ -3497,6 +3583,7 @@ CREATE TABLE IF NOT EXISTS transport_payments (
     PRIMARY KEY (id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS transport_settings (
     id BIGINT NOT NULL AUTO_INCREMENT,
     key_name VARCHAR(255),
@@ -3505,6 +3592,7 @@ CREATE TABLE IF NOT EXISTS transport_settings (
     UNIQUE KEY uk_transport_settings_key_name (key_name)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS vehicle_gps (
     id BIGINT NOT NULL AUTO_INCREMENT,
     vehicle_id BIGINT NOT NULL,
@@ -3519,6 +3607,7 @@ CREATE TABLE IF NOT EXISTS vehicle_gps (
         FOREIGN KEY (vehicle_id) REFERENCES Vehicles(id)
 );
 
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS vehicle_maintenance (
     id BIGINT NOT NULL AUTO_INCREMENT,
     vehicle_id VARCHAR(255) NOT NULL,
@@ -3781,7 +3870,7 @@ CREATE TABLE batch (
   FOREIGN KEY (course_id)
   REFERENCES courses(course_id)
   ON DELETE CASCADE
-);ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -4088,7 +4177,7 @@ CREATE TABLE courses (
   PRIMARY KEY (course_id),
   UNIQUE KEY uk_course_name (course_name),
   UNIQUE KEY uk_share_code (share_code)
-); ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -5416,7 +5505,16 @@ CREATE TABLE `wallet_configs` (
   `affiliate_withdrawal_enabled` TINYINT(1) NOT NULL DEFAULT 1,
   `max_pending_payouts` INT NOT NULL DEFAULT 1,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `course_bookmarks` (
+  `bookmark_id` BIGINT NOT NULL AUTO_INCREMENT,
+  `course_id` BIGINT NOT NULL,
+  `user_id` BIGINT NOT NULL,
+  `created_at` DATETIME,
+  PRIMARY KEY (`bookmark_id`),
+  FOREIGN KEY (`course_id`) REFERENCES `courses`(`course_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `wallet_configs` (`default_min_payout_amount`, `affiliate_withdrawal_enabled`) VALUES (100.0, 1);
 
@@ -5548,6 +5646,7 @@ CREATE TABLE `affiliate_wallets` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 1. Create Links Table (Required for Dashboard Metrics)
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS `affiliate_links` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
   `affiliate_id` BIGINT NOT NULL,
@@ -5565,6 +5664,7 @@ CREATE TABLE IF NOT EXISTS `affiliate_links` (
 );
 
 -- 2. Create Leads Table
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS `affiliate_leads` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
   `name` VARCHAR(100) NOT NULL,
@@ -5587,6 +5687,7 @@ CREATE TABLE IF NOT EXISTS `affiliate_leads` (
 );
 
 -- 3. Create Sales Table
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS `affiliate_sales` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
   `affiliate_id` BIGINT NOT NULL,
@@ -5609,6 +5710,7 @@ CREATE TABLE IF NOT EXISTS `affiliate_sales` (
 );
 
 -- 4. Create Clicks Table
+DROP TABLE IF EXISTS `IF`;
 CREATE TABLE IF NOT EXISTS `affiliate_clicks` (
   `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
   `clicked_code` VARCHAR(100) NOT NULL,

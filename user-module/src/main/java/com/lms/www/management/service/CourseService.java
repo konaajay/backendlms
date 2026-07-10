@@ -17,5 +17,8 @@ public interface CourseService {
     void deleteCourse(Long courseId);
 
     void hardDeleteCourse(Long courseId);
+
+    // Bookmarks
+    boolean toggleBookmark(Long courseId, Long userId);
     
 }

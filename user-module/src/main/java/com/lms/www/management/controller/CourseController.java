@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.lms.www.config.CustomUserDetails;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.lms.www.common.exception.ResourceNotFoundException;
@@ -157,5 +159,18 @@ public class CourseController {
         course.setTopics(topics);
 
         return course;
+    }
+
+    // ===============================
+    // BOOKMARKS
+    // ===============================
+    @PostMapping("/{id}/bookmark")
+    public boolean toggleBookmark(@PathVariable Long id) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof CustomUserDetails) {
+            Long userId = ((CustomUserDetails) principal).getId();
+            return courseService.toggleBookmark(id, userId);
+        }
+        throw new UnauthorizedAccessException("User not authenticated");
     }
 }

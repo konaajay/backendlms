@@ -27,7 +27,12 @@ public interface AffiliateLeadRepository extends JpaRepository<AffiliateLead, Lo
     Long countByLinkIdAndStatus(Long linkId, AffiliateLead.LeadStatus status);
     
     Optional<AffiliateLead> findByEmailAndBatchId(String email, Long batchId);
+    Optional<AffiliateLead> findFirstByEmailOrderByCreatedAtDesc(String email);
     Optional<AffiliateLead> findByStudentId(Long studentId);
     
     List<AffiliateLead> findAllByOrderByCreatedAtDesc();
+    
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @org.springframework.data.jpa.repository.Query("UPDATE AffiliateLead a SET a.discountApplied = true WHERE a.id = :id AND a.discountApplied = false")
+    int atomicMarkDiscountApplied(@org.springframework.data.repository.query.Param("id") Long id);
 }

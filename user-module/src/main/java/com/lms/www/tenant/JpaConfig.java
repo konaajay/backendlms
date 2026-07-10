@@ -15,7 +15,8 @@ public class JpaConfig {
 
     @Bean
     public LocalContainerEntityManagerFactoryBean entityManagerFactory(
-            DataSource tenantRoutingDataSource // 🔥 proxy injected
+            DataSource tenantRoutingDataSource,
+            org.springframework.core.env.Environment env
     ) {
         LocalContainerEntityManagerFactoryBean emf =
                 new LocalContainerEntityManagerFactoryBean();
@@ -23,6 +24,14 @@ public class JpaConfig {
         emf.setDataSource(tenantRoutingDataSource);
         emf.setPackagesToScan("com.lms.www");
         emf.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
+
+        java.util.Map<String, Object> properties = new java.util.HashMap<>();
+        properties.put("hibernate.hbm2ddl.auto", env.getProperty("spring.jpa.hibernate.ddl-auto", "update"));
+        properties.put("hibernate.dialect", env.getProperty("spring.jpa.database-platform", "org.hibernate.dialect.MySQLDialect"));
+        properties.put("hibernate.physical_naming_strategy", env.getProperty("spring.jpa.hibernate.naming.physical-strategy", "org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy"));
+        properties.put("hibernate.show_sql", env.getProperty("spring.jpa.show-sql", "false"));
+        properties.put("hibernate.format_sql", env.getProperty("spring.jpa.properties.hibernate.format_sql", "false"));
+        emf.setJpaPropertyMap(properties);
 
         return emf;
     }

@@ -14,7 +14,7 @@ public class TenantResolver {
 
     public String resolveTenantDomain(String tenantDb) {
         return jdbcTemplate.queryForObject(
-            "SELECT tenant_domain FROM tenant_registry WHERE tenant_db_name = ?",
+            "SELECT tenant_domain FROM tenant_registry WHERE tenant_db_name = ? LIMIT 1",
             String.class,
             tenantDb
         );

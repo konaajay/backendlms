@@ -704,6 +704,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 authorities.add(new SimpleGrantedAuthority("FEE_STRUCTURE_VIEW"));
                 authorities.add(new SimpleGrantedAuthority("FEE_STRUCTURE_CREATE"));
                 authorities.add(new SimpleGrantedAuthority("FEE_STRUCTURE_UPDATE"));
+                authorities.add(new SimpleGrantedAuthority("FEE_STRUCTURE_DELETE"));
                 authorities.add(new SimpleGrantedAuthority("FEE_TYPE_VIEW"));
                 authorities.add(new SimpleGrantedAuthority("FEE_TYPE_VIEW_SELF"));
                 authorities.add(new SimpleGrantedAuthority("PAYMENT_VIEW_ALL"));

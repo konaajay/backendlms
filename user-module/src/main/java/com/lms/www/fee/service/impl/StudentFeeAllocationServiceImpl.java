@@ -267,7 +267,13 @@ public class StudentFeeAllocationServiceImpl implements StudentFeeAllocationServ
         BigDecimal promoDisc = allocation.getPromoDiscount() != null ? allocation.getPromoDiscount() : BigDecimal.ZERO;
         BigDecimal affilDisc = allocation.getAffiliateDiscount() != null ? allocation.getAffiliateDiscount() : BigDecimal.ZERO;
 
-        BigDecimal totalDiscount = adminDisc.add(addlDisc).add(promoDisc).add(affilDisc);
+        // Apply default batch discount from structure
+        BigDecimal defaultBatchDisc = BigDecimal.ZERO;
+        if (structure.getDiscountValue() != null && structure.getDiscountValue().compareTo(BigDecimal.ZERO) > 0) {
+            defaultBatchDisc = installmentBase.multiply(structure.getDiscountValue()).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        }
+
+        BigDecimal totalDiscount = adminDisc.add(addlDisc).add(promoDisc).add(affilDisc).add(defaultBatchDisc);
         
         // Discount should apply to installmentBase
         if (totalDiscount.compareTo(installmentBase) > 0) totalDiscount = installmentBase;
@@ -313,6 +319,25 @@ public class StudentFeeAllocationServiceImpl implements StudentFeeAllocationServ
         try {
             AffiliateLeadDTO lead = affiliateLeadService.getLeadByEmailAndBatch(user.getEmail(), structure.getBatchId());
             if (lead != null) {
+                // 1. Expiry & Course Match Check
+                if (lead.getCourseId() != null && !lead.getCourseId().equals(structure.getCourseId())) {
+                    log.info("Affiliate lead course mismatch, skipping discount. Expected: {}, Got: {}", lead.getCourseId(), structure.getCourseId());
+                    return;
+                }
+                if (lead.getExpiresAt() != null && lead.getExpiresAt().isBefore(LocalDateTime.now())) {
+                    log.info("Affiliate lead expired, rejecting discount for student: {}", user.getEmail());
+                    return;
+                }
+                
+                // 2. Usage Control & Atomic Marking
+                if (!affiliateLeadService.markDiscountApplied(lead.getId())) {
+                    log.info("Affiliate lead already used for discount (or concurrently claimed), rejecting duplicate discount for student: {}", user.getEmail());
+                    return;
+                }
+
+                if (lead.getAffiliateId() != null) {
+                    allocation.setAffiliateId(lead.getAffiliateId());
+                }
                 BigDecimal discountRate = lead.getStudentDiscountValue();
                 
                 if (lead.getReferralCode() != null) {
@@ -329,7 +354,6 @@ public class StudentFeeAllocationServiceImpl implements StudentFeeAllocationServ
                 if (discountRate != null && discountRate.compareTo(BigDecimal.ZERO) > 0) {
                     BigDecimal affiliateDiscount = structure.getTotalAmount().multiply(discountRate).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
                     allocation.setAffiliateDiscount(affiliateDiscount);
-                    allocation.setAffiliateId(lead.getAffiliateId());
                     log.info("Applied automatic affiliate discount: {} for student: {}", affiliateDiscount, user.getEmail());
                 }
             }

@@ -14,6 +14,12 @@ import com.lms.www.management.repository.CourseRepository;
 import com.lms.www.management.repository.TopicContentRepository;
 import com.lms.www.management.repository.TopicRepository;
 import com.lms.www.management.service.CourseService;
+import com.lms.www.management.model.CourseBookmark;
+import com.lms.www.management.repository.CourseBookmarkRepository;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
+import com.lms.www.config.CustomUserDetails;
+import java.time.LocalDateTime;
 
 @Service
 @Transactional
@@ -22,15 +28,18 @@ public class CourseServiceImpl implements CourseService {
     private final CourseRepository courseRepository;
     private final TopicRepository topicRepository;
     private final TopicContentRepository topicContentRepository;
+    private final CourseBookmarkRepository courseBookmarkRepository;
 
     public CourseServiceImpl(
             CourseRepository courseRepository,
             TopicRepository topicRepository,
-            TopicContentRepository topicContentRepository
+            TopicContentRepository topicContentRepository,
+            CourseBookmarkRepository courseBookmarkRepository
     ) {
         this.courseRepository = courseRepository;
         this.topicRepository = topicRepository;
         this.topicContentRepository = topicContentRepository;
+        this.courseBookmarkRepository = courseBookmarkRepository;
     }
 
     // ===============================
@@ -132,6 +141,7 @@ public class CourseServiceImpl implements CourseService {
 
         loadCurriculum(course);
         attachShareLink(course);
+        populateBookmark(course);
         return course;
     }
 
@@ -146,6 +156,7 @@ public class CourseServiceImpl implements CourseService {
             loadCurriculum(c);
             attachShareLink(c);
         });
+        populateBookmarks(courses);
         return courses;
     }
 
@@ -203,8 +214,47 @@ public class CourseServiceImpl implements CourseService {
             course.setShareLink(
                     "https://yourapp.com/share/" + course.getShareCode()
             );
-        } else {
             course.setShareLink(null);
+        }
+    }
+
+    private void populateBookmarks(List<Course> courses) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof CustomUserDetails userDetails) {
+            Long userId = userDetails.getId();
+            List<CourseBookmark> userBookmarks = courseBookmarkRepository.findByUserId(userId);
+            List<Long> bookmarkedCourseIds = userBookmarks.stream()
+                .map(CourseBookmark::getCourseId)
+                .toList();
+
+            for (Course c : courses) {
+                c.setIsBookmarked(bookmarkedCourseIds.contains(c.getCourseId()));
+            }
+        }
+    }
+
+    private void populateBookmark(Course course) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof CustomUserDetails userDetails) {
+            Long userId = userDetails.getId();
+            course.setIsBookmarked(courseBookmarkRepository.findByCourseIdAndUserId(course.getCourseId(), userId).isPresent());
+        }
+    }
+
+    @Override
+    public boolean toggleBookmark(Long courseId, Long userId) {
+        java.util.Optional<CourseBookmark> existing = courseBookmarkRepository.findByCourseIdAndUserId(courseId, userId);
+        if (existing.isPresent()) {
+            courseBookmarkRepository.deleteByCourseIdAndUserId(courseId, userId);
+            return false;
+        } else {
+            CourseBookmark newBookmark = CourseBookmark.builder()
+                .courseId(courseId)
+                .userId(userId)
+                .createdAt(LocalDateTime.now())
+                .build();
+            courseBookmarkRepository.save(newBookmark);
+            return true;
         }
     }
 }

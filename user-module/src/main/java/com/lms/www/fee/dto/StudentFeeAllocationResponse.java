@@ -34,4 +34,5 @@ public class StudentFeeAllocationResponse {
     private BigDecimal promoDiscount;
     private BigDecimal affiliateDiscount;
     private Long affiliateId;
+    private String affiliateName;
 }

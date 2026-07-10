@@ -19,17 +19,21 @@ public class AffiliateInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (walletConfigRepository.count() == 0) {
-            log.info("Initializing default WalletConfig...");
-            WalletConfig config = WalletConfig.builder()
-                    .defaultMinPayoutAmount(new BigDecimal("500.00"))
-                    .maxPayoutAmount(new BigDecimal("50000.00"))
-                    .studentWithdrawalEnabled(false)
-                    .affiliateWithdrawalEnabled(true)
-                    .maxPendingPayouts(1)
-                    .build();
-            walletConfigRepository.save(config);
-            log.info("Default WalletConfig initialized successfully.");
+        try {
+            if (walletConfigRepository.count() == 0) {
+                log.info("Initializing default WalletConfig...");
+                WalletConfig config = WalletConfig.builder()
+                        .defaultMinPayoutAmount(new BigDecimal("500.00"))
+                        .maxPayoutAmount(new BigDecimal("50000.00"))
+                        .studentWithdrawalEnabled(false)
+                        .affiliateWithdrawalEnabled(true)
+                        .maxPendingPayouts(1)
+                        .build();
+                walletConfigRepository.save(config);
+                log.info("Default WalletConfig initialized successfully.");
+            }
+        } catch (Exception e) {
+            log.warn("Could not initialize WalletConfig, table might not exist yet: {}", e.getMessage());
         }
     }
 }

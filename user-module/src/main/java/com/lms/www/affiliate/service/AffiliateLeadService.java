@@ -28,4 +28,5 @@ public interface AffiliateLeadService {
     AffiliateLeadDTO getLeadByStudentId(Long studentId);
     AffiliateLeadDTO getLeadByEmailAndBatch(String email, Long batchId);
     AffiliateLeadDTO convertToStudent(Long leadId, jakarta.servlet.http.HttpServletRequest request);
+    boolean markDiscountApplied(Long leadId);
 }

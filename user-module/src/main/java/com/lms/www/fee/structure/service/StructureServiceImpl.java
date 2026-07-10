@@ -49,6 +49,13 @@ public class StructureServiceImpl implements StructureService {
         structure.setCourseId(courseId);
         structure.setBatchId(request.getBatchId());
         
+        if (request.getBatchId() != null) {
+            List<FeeStructure> existing = structureRepository.findByBatchIdAndIsActiveTrue(request.getBatchId());
+            if (!existing.isEmpty()) {
+                throw new IllegalStateException("An active fee structure already exists for this batch. Only one active fee structure per batch is allowed.");
+            }
+        }
+        
         structure.setDurationMonths(request.getDurationMonths());
         structure.setBaseAmount(request.getBaseAmount());
         structure.setTotalAmount(request.getTotalAmount());

@@ -134,7 +134,12 @@ public class SaleServiceImpl implements SaleService {
         // interested
         log.info("[SaleService] Checking referral code for student {} (no auto-create)", studentId);
         try {
-            referralService.getOrCreateReferralCode(studentId, lead.getCourseId(), false);
+            Long currentUserId = userContext.getCurrentUserId();
+            if (studentId != null && studentId.equals(currentUserId)) {
+                referralService.getOrCreateReferralCode(studentId, lead.getCourseId(), false);
+            } else {
+                log.info("[SaleService] Skipping referral auto-create because current user is admin/different.");
+            }
         } catch (Exception e) {
             log.warn("[SaleService] Non-fatal: Referral lookup skipping for student {}: {}", studentId, e.getMessage());
         }
